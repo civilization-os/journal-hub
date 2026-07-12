@@ -9,7 +9,7 @@ interface PageLayoutProps {
 
 export function PageLayout({ children, title, description, actions }: PageLayoutProps) {
   return (
-    <main className="flex-1 min-h-screen flex flex-col">
+    <main className="flex-1 w-full min-w-0 min-h-screen flex flex-col">
       {(title || actions) && (
         <header className="sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur-sm">
           <div className="flex items-center justify-between px-8 py-4">

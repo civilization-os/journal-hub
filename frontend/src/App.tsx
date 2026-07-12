@@ -10,7 +10,7 @@ function App() {
   return (
     <BrowserRouter>
       <ToasterProvider>
-        <div className="flex min-h-screen bg-background">
+        <div className="flex min-h-screen w-full bg-background">
           <Sidebar />
           <Routes>
             <Route path="/" element={<DashboardPage />} />
