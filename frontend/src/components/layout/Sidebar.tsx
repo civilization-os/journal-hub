@@ -13,16 +13,16 @@ export function Sidebar() {
   const location = useLocation()
 
   return (
-    <aside className="h-screen w-14 border-r border-border bg-card flex flex-col items-center py-5 shrink-0 z-40">
+    <aside className="h-screen w-16 border-r border-border bg-card flex flex-col items-center py-6 shrink-0 z-40 shadow-xs">
       {/* Logo */}
       <div className="mb-8">
-        <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-          <BookOpen className="h-4 w-4 text-primary-foreground" />
+        <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-xs shadow-primary/10">
+          <BookOpen className="h-5 w-5 text-primary-foreground" />
         </div>
       </div>
 
       {/* Nav Items */}
-      <nav className="flex flex-col items-center gap-1 flex-1">
+      <nav className="flex flex-col items-center gap-2 flex-1 w-full px-2">
         {navItems.map(({ to, icon: Icon, label }) => {
           const isActive = to === '/' ? location.pathname === '/' : location.pathname.startsWith(to)
           return (
@@ -31,15 +31,15 @@ export function Sidebar() {
               to={to}
               title={label}
               className={cn(
-                'group relative flex h-9 w-9 items-center justify-center rounded-lg transition-colors',
+                'group relative flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-200 hover:scale-105',
                 isActive
-                  ? 'bg-primary text-primary-foreground'
+                  ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/20'
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground'
               )}
             >
-              <Icon className="h-4 w-4" />
+              <Icon className="h-5 w-5" />
               {/* Tooltip */}
-              <span className="absolute left-full ml-3 hidden rounded-md border bg-card px-2 py-1 text-xs font-medium whitespace-nowrap shadow-md group-hover:flex pointer-events-none">
+              <span className="absolute left-full ml-3 hidden rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-semibold whitespace-nowrap shadow-md group-hover:flex pointer-events-none z-50">
                 {label}
               </span>
             </NavLink>
@@ -48,7 +48,7 @@ export function Sidebar() {
       </nav>
 
       {/* Bottom dot */}
-      <div className="w-1.5 h-1.5 rounded-full bg-green-400 mb-1" title="后端已连接" />
+      <div className="w-2 h-2 rounded-full bg-emerald-500 mb-2 shadow-xs shadow-emerald-500/50" title="后端已连接" />
     </aside>
   )
 }

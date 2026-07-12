@@ -1,15 +1,10 @@
-import { useEditor, EditorContent } from '@tiptap/react'
-import StarterKit from '@tiptap/starter-kit'
-import Placeholder from '@tiptap/extension-placeholder'
+import * as React from 'react'
 import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
-import {
-  Bold, Italic, List, ListOrdered, Quote, Code, Heading2, Heading3, Undo, Redo,
-} from 'lucide-react'
+import { Bold, Italic, List, ListOrdered, Quote, Code, Heading } from 'lucide-react'
 
 interface RichEditorProps {
   content: string
-  onChange: (html: string) => void
+  onChange: (text: string) => void
   placeholder?: string
   className?: string
   minHeight?: string
@@ -18,86 +13,69 @@ interface RichEditorProps {
 export function RichEditor({
   content,
   onChange,
-  placeholder = '开始写作...',
-  className,
+  placeholder = '开始记录你的今天...',
+  className = '',
   minHeight = '200px',
 }: RichEditorProps) {
-  const editor = useEditor({
-    extensions: [
-      StarterKit.configure({
-        heading: { levels: [2, 3] },
-      }),
-      Placeholder.configure({ placeholder }),
-    ],
-    content,
-    onUpdate: ({ editor }) => {
-      onChange(editor.getHTML())
-    },
-    editorProps: {
-      attributes: {
-        class: 'tiptap-editor focus:outline-none',
-        style: `min-height: ${minHeight}`,
-      },
-    },
-  })
+  const textareaRef = React.useRef<HTMLTextAreaElement | null>(null)
 
-  if (!editor) return null
+  const insertMarkdown = (prefix: string, suffix: string = '') => {
+    const textarea = textareaRef.current
+    if (!textarea) return
+
+    const start = textarea.selectionStart
+    const end = textarea.selectionEnd
+    const text = textarea.value
+    const selected = text.substring(start, end)
+    
+    const replacement = prefix + (selected || '') + suffix
+    const newValue = text.substring(0, start) + replacement + text.substring(end)
+    
+    onChange(newValue)
+    
+    // Reset cursor position
+    setTimeout(() => {
+      textarea.focus()
+      textarea.setSelectionRange(start + prefix.length, start + prefix.length + selected.length)
+    }, 50)
+  }
 
   const toolbarItems = [
-    { icon: Bold, action: () => editor.chain().focus().toggleBold().run(), isActive: editor.isActive('bold'), title: '加粗' },
-    { icon: Italic, action: () => editor.chain().focus().toggleItalic().run(), isActive: editor.isActive('italic'), title: '斜体' },
-    { icon: Heading2, action: () => editor.chain().focus().toggleHeading({ level: 2 }).run(), isActive: editor.isActive('heading', { level: 2 }), title: '标题2' },
-    { icon: Heading3, action: () => editor.chain().focus().toggleHeading({ level: 3 }).run(), isActive: editor.isActive('heading', { level: 3 }), title: '标题3' },
-    { icon: List, action: () => editor.chain().focus().toggleBulletList().run(), isActive: editor.isActive('bulletList'), title: '无序列表' },
-    { icon: ListOrdered, action: () => editor.chain().focus().toggleOrderedList().run(), isActive: editor.isActive('orderedList'), title: '有序列表' },
-    { icon: Quote, action: () => editor.chain().focus().toggleBlockquote().run(), isActive: editor.isActive('blockquote'), title: '引用' },
-    { icon: Code, action: () => editor.chain().focus().toggleCode().run(), isActive: editor.isActive('code'), title: '代码' },
+    { icon: Bold, action: () => insertMarkdown('**', '**'), title: '加粗' },
+    { icon: Italic, action: () => insertMarkdown('*', '*'), title: '斜体' },
+    { icon: Heading, action: () => insertMarkdown('\n## ', '\n'), title: '标题' },
+    { icon: List, action: () => insertMarkdown('\n- ', ''), title: '无序列表' },
+    { icon: ListOrdered, action: () => insertMarkdown('\n1. ', ''), title: '有序列表' },
+    { icon: Quote, action: () => insertMarkdown('\n> ', ''), title: '引用' },
+    { icon: Code, action: () => insertMarkdown('`', '`'), title: '代码' },
   ]
 
   return (
-    <div className={cn('border border-border rounded-lg overflow-hidden', className)}>
+    <div className={cn('border border-zinc-200 rounded-lg overflow-hidden bg-white focus-within:border-zinc-500 transition-all duration-200', className)}>
       {/* Toolbar */}
-      <div className="flex items-center gap-0.5 border-b border-border px-2 py-1.5 bg-muted/30 flex-wrap">
-        {toolbarItems.map(({ icon: Icon, action, isActive, title }, i) => (
-          <Button
+      <div className="flex items-center gap-1 border-b border-zinc-150 px-2 py-1.5 bg-zinc-50/50 flex-wrap">
+        {toolbarItems.map(({ icon: Icon, action, title }, i) => (
+          <button
             key={i}
             type="button"
-            variant="ghost"
-            size="icon-sm"
             title={title}
             onClick={action}
-            className={cn(isActive && 'bg-muted text-foreground')}
+            className="p-1.5 text-zinc-400 hover:text-zinc-950 hover:bg-zinc-100 rounded-md transition-all cursor-pointer"
           >
-            <Icon className="h-3.5 w-3.5" />
-          </Button>
+            <Icon className="h-4 w-4" />
+          </button>
         ))}
-        <div className="flex-1" />
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          title="撤销"
-          onClick={() => editor.chain().focus().undo().run()}
-          disabled={!editor.can().undo()}
-        >
-          <Undo className="h-3.5 w-3.5" />
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          title="重做"
-          onClick={() => editor.chain().focus().redo().run()}
-          disabled={!editor.can().redo()}
-        >
-          <Redo className="h-3.5 w-3.5" />
-        </Button>
       </div>
 
-      {/* Editor */}
-      <div className="px-4 py-3">
-        <EditorContent editor={editor} />
-      </div>
+      {/* Editor Textarea */}
+      <textarea
+        ref={textareaRef}
+        value={content}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        style={{ minHeight }}
+        className="w-full px-4 py-3 text-xs text-zinc-950 leading-relaxed placeholder:text-zinc-400 resize-y border-none focus:outline-none focus:ring-0 bg-transparent"
+      />
     </div>
   )
 }

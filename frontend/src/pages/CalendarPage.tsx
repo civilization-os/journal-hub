@@ -1,10 +1,10 @@
 import { useEffect, useState, useCallback } from 'react'
 import {
   format, startOfMonth, endOfMonth, eachDayOfInterval, getDay,
-  addMonths, subMonths, isSameDay, isSameMonth, parseISO,
+  addMonths, subMonths, isSameMonth, parseISO,
 } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
-import { calendarApi, journalApi } from '@/lib/api'
+import { calendarApi } from '@/lib/api'
 import { CalendarEvent, DayData } from '@/types'
 import { PageLayout } from '@/components/layout/PageLayout'
 import { Button } from '@/components/ui/button'
@@ -17,11 +17,11 @@ import { cn, todayStr } from '@/lib/utils'
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六']
 
 const COLOR_MAP: Record<string, string> = {
-  default: 'bg-gray-100 text-gray-700 border-gray-200',
-  red: 'bg-red-50 text-red-700 border-red-200',
-  green: 'bg-green-50 text-green-700 border-green-200',
-  blue: 'bg-blue-50 text-blue-700 border-blue-200',
-  yellow: 'bg-amber-50 text-amber-700 border-amber-200',
+  default: 'border-l-2 border-l-zinc-400 bg-white border-zinc-200 text-zinc-700',
+  red: 'border-l-2 border-l-rose-500 bg-white border-zinc-200 text-zinc-700',
+  green: 'border-l-2 border-l-emerald-500 bg-white border-zinc-200 text-zinc-700',
+  blue: 'border-l-2 border-l-blue-500 bg-white border-zinc-200 text-zinc-700',
+  yellow: 'border-l-2 border-l-amber-500 bg-white border-zinc-200 text-zinc-700',
 }
 
 interface EventForm {
@@ -51,9 +51,13 @@ export function CalendarPage() {
   const loadEvents = useCallback(async () => {
     const start = format(startOfMonth(currentMonth), 'yyyy-MM-dd')
     const end = format(endOfMonth(currentMonth), 'yyyy-MM-dd')
-    const r = await calendarApi.list({ start, end })
-    setEvents(r.data.data)
-  }, [currentMonth])
+    try {
+      const r = await calendarApi.list({ start, end })
+      setEvents(r.data.data)
+    } catch {
+      toast({ title: '加载日程事件失败', variant: 'error' })
+    }
+  }, [currentMonth, toast])
 
   useEffect(() => { loadEvents() }, [loadEvents])
 
@@ -95,14 +99,14 @@ export function CalendarPage() {
     setSaving(true)
     try {
       await calendarApi.create({ ...form, end_date: form.end_date || null, all_day: true })
-      toast({ title: '事件已创建', variant: 'success' })
+      toast({ title: '事件创建成功', variant: 'success' })
       setDialogOpen(false)
       loadEvents()
       if (selectedDate) {
         calendarApi.getDay(selectedDate).then(r => setDayData(r.data))
       }
     } catch {
-      toast({ title: '创建失败', variant: 'error' })
+      toast({ title: '创建事件失败', variant: 'error' })
     } finally {
       setSaving(false)
     }
@@ -117,7 +121,7 @@ export function CalendarPage() {
         calendarApi.getDay(selectedDate).then(r => setDayData(r.data))
       }
     } catch {
-      toast({ title: '删除失败', variant: 'error' })
+      toast({ title: '删除事件失败', variant: 'error' })
     }
   }
 
@@ -129,20 +133,20 @@ export function CalendarPage() {
       description={format(currentMonth, 'yyyy年 MMMM', { locale: zhCN })}
       actions={
         <Button size="sm" onClick={() => openNewEvent()}>
-          <Plus className="h-3.5 w-3.5" /> 新建事件
+          <Plus className="h-3.5 w-3.5" /> 添加日程
         </Button>
       }
     >
-      <div className="flex gap-6 h-[calc(100vh-8rem)]">
+      <div className="flex gap-6 h-[calc(100vh-10rem)] w-full">
         {/* Calendar Grid */}
         <div className="flex-1 flex flex-col min-w-0">
           {/* Month Navigation */}
           <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="icon" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
+            <div className="flex items-center gap-1.5">
+              <Button variant="outline" size="icon-sm" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="icon" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
+              <Button variant="outline" size="icon-sm" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
                 <ChevronRight className="h-4 w-4" />
               </Button>
               <Button
@@ -153,25 +157,25 @@ export function CalendarPage() {
                 今天
               </Button>
             </div>
-            <h2 className="text-sm font-semibold">
+            <h2 className="text-xs font-bold text-zinc-800">
               {format(currentMonth, 'yyyy年 M月', { locale: zhCN })}
             </h2>
           </div>
 
           {/* Weekday Headers */}
-          <div className="grid grid-cols-7 mb-1">
+          <div className="grid grid-cols-7 mb-1.5">
             {WEEKDAYS.map(d => (
-              <div key={d} className="text-center text-xs text-muted-foreground py-2 font-medium">
+              <div key={d} className="text-center text-[10px] font-bold text-zinc-400 py-1">
                 {d}
               </div>
             ))}
           </div>
 
           {/* Days Grid */}
-          <div className="grid grid-cols-7 flex-1 gap-px bg-border rounded-lg overflow-hidden border border-border">
+          <div className="grid grid-cols-7 flex-1 gap-px bg-zinc-200 border border-zinc-200 rounded-lg overflow-hidden shadow-xs">
             {/* Padding */}
             {Array.from({ length: startPadding }).map((_, i) => (
-              <div key={`pad-${i}`} className="bg-background min-h-[80px]" />
+              <div key={`pad-${i}`} className="bg-zinc-50/40 min-h-[70px]" />
             ))}
 
             {/* Days */}
@@ -187,33 +191,41 @@ export function CalendarPage() {
                   key={dateStr}
                   onClick={() => handleDayClick(dateStr)}
                   className={cn(
-                    'bg-background min-h-[80px] p-1.5 cursor-pointer transition-colors hover:bg-muted/50',
-                    isSelected && 'ring-1 ring-inset ring-foreground',
+                    'bg-white min-h-[70px] p-2 cursor-pointer transition-all duration-150 flex flex-col justify-between hover:bg-zinc-50/50',
+                    isSelected && 'ring-1 ring-inset ring-zinc-950',
                     !isCurrentMonth && 'opacity-40'
                   )}
                 >
-                  <div className={cn(
-                    'w-6 h-6 rounded-full flex items-center justify-center text-xs mb-1 font-medium',
-                    isToday && 'bg-primary text-primary-foreground',
-                    !isToday && 'text-foreground'
-                  )}>
-                    {format(day, 'd')}
+                  <div className="flex justify-between items-start">
+                    <span className={cn(
+                      'w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold',
+                      isToday && 'bg-zinc-950 text-white',
+                      !isToday && 'text-zinc-800'
+                    )}>
+                      {format(day, 'd')}
+                    </span>
                   </div>
-                  <div className="space-y-0.5">
-                    {dayEvents.slice(0, 2).map(ev => (
-                      <div
-                        key={ev.id}
-                        className={cn(
-                          'text-[10px] px-1 py-0.5 rounded truncate border',
-                          COLOR_MAP[ev.color] || COLOR_MAP.default
-                        )}
-                      >
-                        {ev.title}
-                      </div>
-                    ))}
+                  <div className="space-y-1 mt-2">
+                    {dayEvents.slice(0, 2).map(ev => {
+                      const prefixBorder = ev.color === 'red' ? 'border-l-rose-500' :
+                                           ev.color === 'green' ? 'border-l-emerald-500' :
+                                           ev.color === 'blue' ? 'border-l-blue-500' :
+                                           ev.color === 'yellow' ? 'border-l-amber-500' : 'border-l-zinc-400'
+                      return (
+                        <div
+                          key={ev.id}
+                          className={cn(
+                            'text-[9px] font-bold px-1.5 py-0.5 rounded border border-zinc-150 border-l-2 truncate',
+                            prefixBorder
+                          )}
+                        >
+                          {ev.title}
+                        </div>
+                      )
+                    })}
                     {dayEvents.length > 2 && (
-                      <div className="text-[10px] text-muted-foreground pl-1">
-                        +{dayEvents.length - 2}
+                      <div className="text-[9px] text-zinc-400 pl-1 font-semibold">
+                        +{dayEvents.length - 2}项日程
                       </div>
                     )}
                   </div>
@@ -227,85 +239,91 @@ export function CalendarPage() {
         <div className="w-72 shrink-0 overflow-y-auto space-y-4">
           {selectedDate && (
             <>
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold">
+              <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
+                <h3 className="text-xs font-bold text-zinc-800">
                   {format(parseISO(selectedDate), 'M月d日 EEEE', { locale: zhCN })}
                 </h3>
-                <Button variant="ghost" size="icon-sm" onClick={() => openNewEvent(selectedDate)}>
+                <Button variant="outline" size="icon-sm" onClick={() => openNewEvent(selectedDate)}>
                   <Plus className="h-3.5 w-3.5" />
                 </Button>
               </div>
 
               {/* Events */}
-              {dayData?.events && dayData.events.length > 0 && (
-                <section>
-                  <h4 className="text-xs text-muted-foreground uppercase tracking-wide mb-1.5">事件</h4>
-                  <div className="space-y-1">
-                    {dayData.events.map(ev => (
+              <section className="space-y-2">
+                <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">日程事件</h4>
+                <div className="space-y-1.5">
+                  {dayData?.events && dayData.events.length > 0 ? (
+                    dayData.events.map(ev => (
                       <div
                         key={ev.id}
                         className={cn(
-                          'flex items-center justify-between rounded-lg border px-3 py-2 text-sm',
+                          'flex items-center justify-between rounded-lg border border-zinc-200 p-3 text-xs font-semibold shadow-xs',
                           COLOR_MAP[ev.color] || COLOR_MAP.default
                         )}
                       >
                         <span className="truncate">{ev.title}</span>
                         <button
                           onClick={() => handleDeleteEvent(ev.id)}
-                          className="ml-2 opacity-60 hover:opacity-100 shrink-0"
+                          className="ml-2 text-zinc-400 hover:text-rose-600 transition-colors cursor-pointer shrink-0"
                         >
                           <X className="h-3.5 w-3.5" />
                         </button>
                       </div>
-                    ))}
-                  </div>
-                </section>
-              )}
+                    ))
+                  ) : (
+                    <div className="text-[11px] text-zinc-400 py-3 text-center border border-dashed border-zinc-150 rounded-lg bg-zinc-50/30">
+                      无日程安排
+                    </div>
+                  )}
+                </div>
+              </section>
 
               {/* Journals */}
-              {dayData?.journals && dayData.journals.length > 0 && (
-                <section>
-                  <h4 className="text-xs text-muted-foreground uppercase tracking-wide mb-1.5">日志</h4>
-                  <div className="space-y-1">
-                    {dayData.journals.map(j => (
-                      <div key={j.id} className="flex items-center gap-2 border border-border rounded-lg px-3 py-2">
-                        <BookOpen className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                        <span className="text-sm truncate">{j.title || '无标题'}</span>
+              <section className="space-y-2">
+                <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">当日日志</h4>
+                <div className="space-y-1.5">
+                  {dayData?.journals && dayData.journals.length > 0 ? (
+                    dayData.journals.map(j => (
+                      <div key={j.id} className="flex items-center gap-2.5 border border-zinc-200 bg-white rounded-lg p-3 shadow-xs">
+                        <BookOpen className="h-3.5 w-3.5 text-zinc-400 shrink-0" />
+                        <span className="text-xs font-semibold text-zinc-800 truncate">{j.title || '无标题日志'}</span>
                       </div>
-                    ))}
-                  </div>
-                </section>
-              )}
+                    ))
+                  ) : (
+                    <div className="text-[11px] text-zinc-400 py-3 text-center border border-dashed border-zinc-150 rounded-lg bg-zinc-50/30">
+                      无日志记录
+                    </div>
+                  )}
+                </div>
+              </section>
 
               {/* Todos */}
-              {dayData?.todos && dayData.todos.length > 0 && (
-                <section>
-                  <h4 className="text-xs text-muted-foreground uppercase tracking-wide mb-1.5">待办</h4>
-                  <div className="space-y-1">
-                    {dayData.todos.map(t => (
+              <section className="space-y-2">
+                <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">相关待办</h4>
+                <div className="space-y-1.5">
+                  {dayData?.todos && dayData.todos.length > 0 ? (
+                    dayData.todos.map(t => (
                       <div
                         key={t.id}
                         className={cn(
-                          'flex items-center gap-2 border border-border rounded-lg px-3 py-2',
+                          'flex items-center gap-2.5 border border-zinc-200 bg-white rounded-lg p-3 shadow-xs',
                           t.completed && 'opacity-50'
                         )}
                       >
                         <CheckSquare className={cn(
                           'h-3.5 w-3.5 shrink-0',
-                          t.completed ? 'text-green-500' : 'text-muted-foreground'
+                          t.completed ? 'text-emerald-500' : 'text-zinc-400'
                         )} />
-                        <span className={cn('text-sm truncate', t.completed && 'line-through')}>{t.title}</span>
+                        <span className={cn('text-xs font-semibold text-zinc-800 truncate', t.completed && 'line-through')}>{t.title}</span>
                       </div>
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              {(!dayData || (dayData.events.length === 0 && dayData.journals.length === 0 && dayData.todos.length === 0)) && (
-                <div className="text-sm text-muted-foreground text-center py-8 border border-dashed border-border rounded-lg">
-                  这天没有内容
+                    ))
+                  ) : (
+                    <div className="text-[11px] text-zinc-400 py-3 text-center border border-dashed border-zinc-150 rounded-lg bg-zinc-50/30">
+                      无相关任务
+                    </div>
+                  )}
                 </div>
-              )}
+              </section>
             </>
           )}
         </div>
@@ -317,51 +335,56 @@ export function CalendarPage() {
           <DialogHeader>
             <DialogTitle>新建日历事件</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-4 pt-2">
             <Input
-              placeholder="事件标题 *"
+              placeholder="事件标题（如：部门周会） *"
               value={form.title}
               onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-              autoFocus
             />
             <Input
-              placeholder="描述（可选）"
+              placeholder="描述信息（可选）"
               value={form.description}
               onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
             />
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs text-muted-foreground mb-1 block">开始日期</label>
+                <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1 block">开始日期</label>
                 <Input type="date" value={form.start_date} onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))} />
               </div>
               <div>
-                <label className="text-xs text-muted-foreground mb-1 block">结束日期（可选）</label>
+                <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1 block">结束日期（可选）</label>
                 <Input type="date" value={form.end_date} onChange={e => setForm(f => ({ ...f, end_date: e.target.value }))} />
               </div>
             </div>
             <div>
-              <label className="text-xs text-muted-foreground mb-2 block">颜色</label>
+              <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2 block">事件标识色彩</label>
               <div className="flex gap-2">
-                {Object.entries({ default: '默认', red: '红', green: '绿', blue: '蓝', yellow: '黄' }).map(([val, label]) => (
-                  <button
-                    key={val}
-                    onClick={() => setForm(f => ({ ...f, color: val }))}
-                    className={cn(
-                      'px-2.5 py-1 rounded text-xs border transition-colors',
-                      COLOR_MAP[val],
-                      form.color === val ? 'ring-2 ring-offset-1 ring-foreground/30' : ''
-                    )}
-                  >
-                    {label}
-                  </button>
-                ))}
+                {Object.entries({ default: '默认', red: '紧急', green: '工作', blue: '生活', yellow: '学习' }).map(([val, label]) => {
+                  const borderClass = val === 'red' ? 'border-l-2 border-l-rose-500' :
+                                      val === 'green' ? 'border-l-2 border-l-emerald-500' :
+                                      val === 'blue' ? 'border-l-2 border-l-blue-500' :
+                                      val === 'yellow' ? 'border-l-2 border-l-amber-500' : 'border-l-2 border-l-zinc-400'
+                  return (
+                    <button
+                      key={val}
+                      onClick={() => setForm(f => ({ ...f, color: val }))}
+                      className={cn(
+                        'px-2.5 py-1.5 rounded-lg text-[10px] font-bold border border-zinc-200 bg-white transition-all cursor-pointer',
+                        borderClass,
+                        form.color === val ? 'ring-1 ring-zinc-950 ring-offset-0' : ''
+                      )}
+                    >
+                      {label}
+                    </button>
+                  )
+                })}
               </div>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>取消</Button>
             <Button onClick={handleSaveEvent} disabled={saving}>
-              {saving ? '创建中...' : '创建事件'}
+              {saving ? '正在保存...' : '添加日程'}
             </Button>
           </DialogFooter>
         </DialogContent>
