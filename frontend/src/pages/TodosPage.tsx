@@ -155,9 +155,9 @@ export function TodosPage() {
   const TodoItem = ({ todo }: { todo: Todo }) => {
     const priorityBorder = todo.priority === 'high' ? 'border-l-2 border-l-rose-500' :
                            todo.priority === 'medium' ? 'border-l-2 border-l-amber-500' :
-                           'border-l-2 border-l-zinc-300'
+                           'border-l-2 border-l-zinc-600'
     return (
-      <div className={`group flex items-start gap-4 rounded-lg px-4 py-3.5 bg-white border border-zinc-200/60 shadow-xs hover:border-zinc-300 hover:shadow-sm transition-all duration-200 ${priorityBorder} ${
+      <div className={`group flex items-start gap-4 rounded-lg px-4 py-3.5 bg-card border border-zinc-850 shadow-sm hover:border-zinc-700 hover:shadow-md transition-all duration-200 ${priorityBorder} ${
         todo.completed ? 'opacity-55' : ''
       }`}>
         <Checkbox
@@ -168,7 +168,7 @@ export function TodosPage() {
         <div className="flex-1 min-w-0">
           <div
             onClick={() => handleToggle(todo.id)}
-            className={`text-xs font-bold cursor-pointer text-zinc-900 ${todo.completed ? 'line-through text-zinc-400 font-medium' : ''}`}
+            className={`text-xs font-bold cursor-pointer text-zinc-200 ${todo.completed ? 'line-through text-zinc-500 font-semibold' : ''}`}
           >
             {todo.title}
           </div>
@@ -178,26 +178,26 @@ export function TodosPage() {
           <div className="flex items-center gap-2 mt-2.5 flex-wrap">
             {priorityBadge(todo.priority)}
             {todo.due_date && (
-              <span className={`text-[10px] font-bold ${todo.due_date < today && !todo.completed ? 'text-rose-600' : 'text-zinc-400'}`}>
+              <span className={`text-[10px] font-bold ${todo.due_date < today && !todo.completed ? 'text-rose-400' : 'text-zinc-550'}`}>
                 {todo.due_date === today ? '今天截止' : todo.due_date < today ? `已逾期 ${todo.due_date}` : `截止 ${todo.due_date}`}
               </span>
             )}
             {todo.tags.map(tag => (
-              <span key={tag} className="text-[10px] font-semibold border border-zinc-200 rounded px-1.5 py-0.5 bg-zinc-50 text-zinc-500">{tag}</span>
+              <span key={tag} className="text-[10px] font-bold border border-zinc-800 rounded px-1.5 py-0.5 bg-zinc-900 text-zinc-400">{tag}</span>
             ))}
           </div>
         </div>
         <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
           <Button variant="ghost" size="icon-sm" onClick={() => openEdit(todo)}>
-            <Edit2 className="h-3.5 w-3.5 text-zinc-400 hover:text-zinc-950" />
+            <Edit2 className="h-3.5 w-3.5 text-zinc-450 hover:text-white" />
           </Button>
           <Button
             variant="ghost"
             size="icon-sm"
-            className="hover:text-rose-600 hover:bg-rose-50"
+            className="hover:text-rose-400 hover:bg-rose-950/20"
             onClick={() => handleDelete(todo.id)}
           >
-            <Trash2 className="h-3.5 w-3.5 text-zinc-400" />
+            <Trash2 className="h-3.5 w-3.5 text-zinc-450" />
           </Button>
         </div>
       </div>
@@ -208,7 +208,7 @@ export function TodosPage() {
     if (items.length === 0) return null
     return (
       <section className="space-y-2">
-        <h3 className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider px-1">{title}</h3>
+        <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider px-1">{title}</h3>
         <div className="space-y-2">
           {items.map(t => <TodoItem key={t.id} todo={t} />)}
         </div>
@@ -222,13 +222,13 @@ export function TodosPage() {
       description={`有 ${todos.filter(t => !t.completed).length} 项任务待处理`}
       actions={
         <div className="flex items-center gap-3">
-          <div className="flex rounded-lg border border-zinc-200 overflow-hidden bg-white shadow-xs">
+          <div className="flex rounded-lg border border-zinc-850 overflow-hidden bg-card shadow-sm">
             {(['pending', 'all', 'completed'] as const).map(f => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
                 className={`px-3 py-1.5 text-[11px] font-bold transition-all cursor-pointer ${
-                  filter === f ? 'bg-zinc-950 text-white border-zinc-950' : 'hover:bg-zinc-50 text-zinc-500'
+                  filter === f ? 'bg-white text-zinc-950 border-white font-extrabold' : 'hover:bg-zinc-900 text-zinc-400'
                 }`}
               >
                 {f === 'pending' ? '待处理' : f === 'completed' ? '已完成' : '全部'}
@@ -241,15 +241,15 @@ export function TodosPage() {
         </div>
       }
     >
-      <div className="max-w-2xl space-y-6 w-full">
+      <div className="max-w-2xl space-y-6 w-full text-zinc-200">
         {loading && (
           <div className="space-y-3">
             {[0, 1, 2, 3].map(i => (
-              <div key={i} className="flex gap-4 px-4 py-3.5 border border-zinc-200 rounded-lg bg-white animate-pulse">
-                <div className="h-4 w-4 bg-zinc-100 rounded mt-0.5" />
+              <div key={i} className="flex gap-4 px-4 py-3.5 border border-zinc-850 rounded-lg bg-card animate-pulse">
+                <div className="h-4 w-4 bg-zinc-800 rounded mt-0.5" />
                 <div className="flex-1 space-y-2">
-                  <div className="h-3.5 bg-zinc-100 rounded w-2/3" />
-                  <div className="h-2.5 bg-zinc-100 rounded w-1/3" />
+                  <div className="h-3.5 bg-zinc-800 rounded w-2/3" />
+                  <div className="h-2.5 bg-zinc-800 rounded w-1/3" />
                 </div>
               </div>
             ))}
@@ -257,7 +257,7 @@ export function TodosPage() {
         )}
 
         {!loading && todos.length === 0 && (
-          <div className="text-center py-14 border border-dashed border-zinc-200 rounded-lg bg-zinc-50/50">
+          <div className="text-center py-14 border border-dashed border-zinc-850 rounded-lg bg-zinc-900/10">
             <p className="text-xs text-zinc-500 mb-4">
               {filter === 'completed' ? '没有已完成的待办事项' : '所有任务已全部搞定！没有待办事项了 🌟'}
             </p>
@@ -291,7 +291,7 @@ export function TodosPage() {
 
       {/* Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg bg-card border-zinc-800">
           <DialogHeader>
             <DialogTitle>{editingId ? '编辑待办任务' : '添加待办任务'}</DialogTitle>
           </DialogHeader>
@@ -301,23 +301,25 @@ export function TodosPage() {
               placeholder="任务名称 *"
               value={form.title}
               onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+              className="bg-zinc-900 border-zinc-800"
             />
             <Textarea
               placeholder="任务详细描述（可选）"
               value={form.description}
               onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
               rows={2}
+              className="bg-zinc-900 border-zinc-800"
             />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1 block">优先级</label>
                 <Select value={form.priority} onValueChange={(v: string) => setForm(f => ({ ...f, priority: v as Priority }))}>
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-zinc-900 border-zinc-800 text-zinc-200">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-zinc-900 border-zinc-800">
                     {PRIORITIES.map(p => (
-                      <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                      <SelectItem key={p.value} value={p.value} className="hover:bg-zinc-800 text-zinc-200">{p.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -328,6 +330,7 @@ export function TodosPage() {
                   type="date"
                   value={form.due_date}
                   onChange={e => setForm(f => ({ ...f, due_date: e.target.value }))}
+                  className="bg-zinc-900 border-zinc-800"
                 />
               </div>
             </div>
@@ -341,9 +344,9 @@ export function TodosPage() {
                   value={tagInput}
                   onChange={e => setTagInput(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addTag())}
-                  className="flex-1"
+                  className="flex-1 bg-zinc-900 border-zinc-800"
                 />
-                <Button type="button" variant="outline" size="sm" onClick={addTag}>添加</Button>
+                <Button type="button" variant="outline" size="sm" className="border-zinc-800 text-zinc-300" onClick={addTag}>添加</Button>
               </div>
               {form.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mt-3">
@@ -351,7 +354,7 @@ export function TodosPage() {
                     <Badge
                       key={tag}
                       variant="outline"
-                      className="cursor-pointer hover:border-rose-300 hover:text-rose-600 transition-all"
+                      className="cursor-pointer border-zinc-800 text-zinc-400 hover:border-rose-950 hover:text-rose-450 transition-all"
                       onClick={() => setForm(f => ({ ...f, tags: f.tags.filter(t => t !== tag) }))}
                     >
                       {tag} ×
@@ -363,7 +366,7 @@ export function TodosPage() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>取消</Button>
+            <Button variant="outline" className="border-zinc-800 text-zinc-400" onClick={() => setDialogOpen(false)}>取消</Button>
             <Button onClick={handleSave} disabled={saving}>
               {saving ? '正在保存...' : editingId ? '保存任务' : '创建任务'}
             </Button>

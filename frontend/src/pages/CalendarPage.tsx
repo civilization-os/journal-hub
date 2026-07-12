@@ -17,11 +17,11 @@ import { cn, todayStr } from '@/lib/utils'
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六']
 
 const COLOR_MAP: Record<string, string> = {
-  default: 'border-l-2 border-l-zinc-400 bg-white border-zinc-200 text-zinc-700',
-  red: 'border-l-2 border-l-rose-500 bg-white border-zinc-200 text-zinc-700',
-  green: 'border-l-2 border-l-emerald-500 bg-white border-zinc-200 text-zinc-700',
-  blue: 'border-l-2 border-l-blue-500 bg-white border-zinc-200 text-zinc-700',
-  yellow: 'border-l-2 border-l-amber-500 bg-white border-zinc-200 text-zinc-700',
+  default: 'border-l-2 border-l-zinc-500 bg-zinc-900/60 border-zinc-800 text-zinc-300',
+  red: 'border-l-2 border-l-rose-500 bg-rose-950/10 border-rose-900/30 text-rose-300',
+  green: 'border-l-2 border-l-emerald-500 bg-emerald-950/10 border-emerald-900/30 text-emerald-300',
+  blue: 'border-l-2 border-l-blue-500 bg-blue-950/10 border-blue-900/30 text-blue-300',
+  yellow: 'border-l-2 border-l-amber-500 bg-amber-950/10 border-amber-900/30 text-amber-300',
 }
 
 interface EventForm {
@@ -137,27 +137,28 @@ export function CalendarPage() {
         </Button>
       }
     >
-      <div className="flex gap-6 h-[calc(100vh-10rem)] w-full">
+      <div className="flex flex-col lg:flex-row gap-6 lg:h-[calc(100vh-10rem)] w-full text-zinc-200">
         {/* Calendar Grid */}
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 flex flex-col min-w-0 h-full">
           {/* Month Navigation */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-1.5">
-              <Button variant="outline" size="icon-sm" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
+              <Button variant="outline" size="icon-sm" className="border-zinc-800 text-zinc-300" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="icon-sm" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
+              <Button variant="outline" size="icon-sm" className="border-zinc-800 text-zinc-300" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
                 <ChevronRight className="h-4 w-4" />
               </Button>
               <Button
                 variant="outline"
                 size="sm"
+                className="border-zinc-800 text-zinc-300"
                 onClick={() => { setCurrentMonth(new Date()); setSelectedDate(today) }}
               >
                 今天
               </Button>
             </div>
-            <h2 className="text-xs font-bold text-zinc-800">
+            <h2 className="text-xs font-bold text-zinc-300">
               {format(currentMonth, 'yyyy年 M月', { locale: zhCN })}
             </h2>
           </div>
@@ -165,17 +166,17 @@ export function CalendarPage() {
           {/* Weekday Headers */}
           <div className="grid grid-cols-7 mb-1.5">
             {WEEKDAYS.map(d => (
-              <div key={d} className="text-center text-[10px] font-bold text-zinc-400 py-1">
+              <div key={d} className="text-center text-[10px] font-bold text-zinc-500 py-1">
                 {d}
               </div>
             ))}
           </div>
 
           {/* Days Grid */}
-          <div className="grid grid-cols-7 flex-1 gap-px bg-zinc-200 border border-zinc-200 rounded-lg overflow-hidden shadow-xs">
+          <div className="grid grid-cols-7 flex-1 gap-px bg-zinc-850 border border-zinc-850 rounded-lg overflow-hidden shadow-sm">
             {/* Padding */}
             {Array.from({ length: startPadding }).map((_, i) => (
-              <div key={`pad-${i}`} className="bg-zinc-50/40 min-h-[70px]" />
+              <div key={`pad-${i}`} className="bg-zinc-950/20 min-h-[70px]" />
             ))}
 
             {/* Days */}
@@ -191,31 +192,31 @@ export function CalendarPage() {
                   key={dateStr}
                   onClick={() => handleDayClick(dateStr)}
                   className={cn(
-                    'bg-white min-h-[70px] p-2 cursor-pointer transition-all duration-150 flex flex-col justify-between hover:bg-zinc-50/50',
-                    isSelected && 'ring-1 ring-inset ring-zinc-950',
-                    !isCurrentMonth && 'opacity-40'
+                    'bg-card min-h-[70px] p-2 cursor-pointer transition-all duration-150 flex flex-col justify-between hover:bg-zinc-900/30',
+                    isSelected && 'ring-1 ring-inset ring-white',
+                    !isCurrentMonth && 'opacity-30'
                   )}
                 >
                   <div className="flex justify-between items-start">
                     <span className={cn(
                       'w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold',
-                      isToday && 'bg-zinc-950 text-white',
-                      !isToday && 'text-zinc-800'
+                      isToday && 'bg-white text-zinc-950',
+                      !isToday && 'text-zinc-300'
                     )}>
                       {format(day, 'd')}
                     </span>
                   </div>
                   <div className="space-y-1 mt-2">
                     {dayEvents.slice(0, 2).map(ev => {
-                      const prefixBorder = ev.color === 'red' ? 'border-l-rose-500' :
-                                           ev.color === 'green' ? 'border-l-emerald-500' :
-                                           ev.color === 'blue' ? 'border-l-blue-500' :
-                                           ev.color === 'yellow' ? 'border-l-amber-500' : 'border-l-zinc-400'
+                      const prefixBorder = ev.color === 'red' ? 'border-l-rose-500 bg-rose-950/20 text-rose-300 border-rose-900/40' :
+                                           ev.color === 'green' ? 'border-l-emerald-500 bg-emerald-950/20 text-emerald-300 border-emerald-900/40' :
+                                           ev.color === 'blue' ? 'border-l-blue-500 bg-blue-950/20 text-blue-300 border-blue-900/40' :
+                                           ev.color === 'yellow' ? 'border-l-amber-500 bg-amber-950/20 text-amber-300 border-amber-900/40' : 'border-l-zinc-500 bg-zinc-900/60 border-zinc-800 text-zinc-300'
                       return (
                         <div
                           key={ev.id}
                           className={cn(
-                            'text-[9px] font-bold px-1.5 py-0.5 rounded border border-zinc-150 border-l-2 truncate',
+                            'text-[9px] font-bold px-1.5 py-0.5 rounded border truncate',
                             prefixBorder
                           )}
                         >
@@ -224,7 +225,7 @@ export function CalendarPage() {
                       )
                     })}
                     {dayEvents.length > 2 && (
-                      <div className="text-[9px] text-zinc-400 pl-1 font-semibold">
+                      <div className="text-[9px] text-zinc-500 pl-1 font-semibold">
                         +{dayEvents.length - 2}项日程
                       </div>
                     )}
@@ -236,42 +237,42 @@ export function CalendarPage() {
         </div>
 
         {/* Day Detail Panel */}
-        <div className="w-72 shrink-0 overflow-y-auto space-y-4">
+        <div className="w-full lg:w-72 shrink-0 overflow-y-auto space-y-4 lg:h-full pb-8 lg:pb-0">
           {selectedDate && (
             <>
-              <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
-                <h3 className="text-xs font-bold text-zinc-800">
+              <div className="flex items-center justify-between border-b border-zinc-850 pb-3">
+                <h3 className="text-xs font-bold text-zinc-200">
                   {format(parseISO(selectedDate), 'M月d日 EEEE', { locale: zhCN })}
                 </h3>
-                <Button variant="outline" size="icon-sm" onClick={() => openNewEvent(selectedDate)}>
+                <Button variant="outline" size="icon-sm" className="border-zinc-800 text-zinc-300" onClick={() => openNewEvent(selectedDate)}>
                   <Plus className="h-3.5 w-3.5" />
                 </Button>
               </div>
 
               {/* Events */}
               <section className="space-y-2">
-                <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">日程事件</h4>
+                <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">日程事件</h4>
                 <div className="space-y-1.5">
                   {dayData?.events && dayData.events.length > 0 ? (
                     dayData.events.map(ev => (
                       <div
                         key={ev.id}
                         className={cn(
-                          'flex items-center justify-between rounded-lg border border-zinc-200 p-3 text-xs font-semibold shadow-xs',
+                          'flex items-center justify-between rounded-lg border p-3 text-xs font-bold shadow-sm',
                           COLOR_MAP[ev.color] || COLOR_MAP.default
                         )}
                       >
                         <span className="truncate">{ev.title}</span>
                         <button
                           onClick={() => handleDeleteEvent(ev.id)}
-                          className="ml-2 text-zinc-400 hover:text-rose-600 transition-colors cursor-pointer shrink-0"
+                          className="ml-2 text-zinc-500 hover:text-rose-400 transition-colors cursor-pointer shrink-0"
                         >
                           <X className="h-3.5 w-3.5" />
                         </button>
                       </div>
                     ))
                   ) : (
-                    <div className="text-[11px] text-zinc-400 py-3 text-center border border-dashed border-zinc-150 rounded-lg bg-zinc-50/30">
+                    <div className="text-[11px] text-zinc-500 py-3 text-center border border-dashed border-zinc-850 rounded-lg bg-zinc-900/10">
                       无日程安排
                     </div>
                   )}
@@ -280,17 +281,17 @@ export function CalendarPage() {
 
               {/* Journals */}
               <section className="space-y-2">
-                <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">当日日志</h4>
+                <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">当日日志</h4>
                 <div className="space-y-1.5">
                   {dayData?.journals && dayData.journals.length > 0 ? (
                     dayData.journals.map(j => (
-                      <div key={j.id} className="flex items-center gap-2.5 border border-zinc-200 bg-white rounded-lg p-3 shadow-xs">
-                        <BookOpen className="h-3.5 w-3.5 text-zinc-400 shrink-0" />
-                        <span className="text-xs font-semibold text-zinc-800 truncate">{j.title || '无标题日志'}</span>
+                      <div key={j.id} className="flex items-center gap-2.5 border border-zinc-850 bg-card rounded-lg p-3 shadow-sm">
+                        <BookOpen className="h-3.5 w-3.5 text-zinc-500 shrink-0" />
+                        <span className="text-xs font-bold text-zinc-300 truncate">{j.title || '无标题日志'}</span>
                       </div>
                     ))
                   ) : (
-                    <div className="text-[11px] text-zinc-400 py-3 text-center border border-dashed border-zinc-150 rounded-lg bg-zinc-50/30">
+                    <div className="text-[11px] text-zinc-500 py-3 text-center border border-dashed border-zinc-850 rounded-lg bg-zinc-900/10">
                       无日志记录
                     </div>
                   )}
@@ -299,26 +300,26 @@ export function CalendarPage() {
 
               {/* Todos */}
               <section className="space-y-2">
-                <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">相关待办</h4>
+                <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">相关待办</h4>
                 <div className="space-y-1.5">
                   {dayData?.todos && dayData.todos.length > 0 ? (
                     dayData.todos.map(t => (
                       <div
                         key={t.id}
                         className={cn(
-                          'flex items-center gap-2.5 border border-zinc-200 bg-white rounded-lg p-3 shadow-xs',
-                          t.completed && 'opacity-50'
+                          'flex items-center gap-2.5 border border-zinc-850 bg-card rounded-lg p-3 shadow-sm',
+                          t.completed && 'opacity-40'
                         )}
                       >
                         <CheckSquare className={cn(
                           'h-3.5 w-3.5 shrink-0',
-                          t.completed ? 'text-emerald-500' : 'text-zinc-400'
+                          t.completed ? 'text-emerald-500' : 'text-zinc-550'
                         )} />
-                        <span className={cn('text-xs font-semibold text-zinc-800 truncate', t.completed && 'line-through')}>{t.title}</span>
+                        <span className={cn('text-xs font-bold text-zinc-300 truncate', t.completed && 'line-through')}>{t.title}</span>
                       </div>
                     ))
                   ) : (
-                    <div className="text-[11px] text-zinc-400 py-3 text-center border border-dashed border-zinc-150 rounded-lg bg-zinc-50/30">
+                    <div className="text-[11px] text-zinc-500 py-3 text-center border border-dashed border-zinc-850 rounded-lg bg-zinc-900/10">
                       无相关任务
                     </div>
                   )}
@@ -331,7 +332,7 @@ export function CalendarPage() {
 
       {/* Create Event Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md bg-card border-zinc-800">
           <DialogHeader>
             <DialogTitle>新建日历事件</DialogTitle>
           </DialogHeader>
@@ -340,20 +341,22 @@ export function CalendarPage() {
               placeholder="事件标题（如：部门周会） *"
               value={form.title}
               onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+              className="bg-zinc-900 border-zinc-800"
             />
             <Input
               placeholder="描述信息（可选）"
               value={form.description}
               onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+              className="bg-zinc-900 border-zinc-800"
             />
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1 block">开始日期</label>
-                <Input type="date" value={form.start_date} onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))} />
+                <Input type="date" value={form.start_date} onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))} className="bg-zinc-900 border-zinc-800" />
               </div>
               <div>
                 <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1 block">结束日期（可选）</label>
-                <Input type="date" value={form.end_date} onChange={e => setForm(f => ({ ...f, end_date: e.target.value }))} />
+                <Input type="date" value={form.end_date} onChange={e => setForm(f => ({ ...f, end_date: e.target.value }))} className="bg-zinc-900 border-zinc-800" />
               </div>
             </div>
             <div>
@@ -363,15 +366,15 @@ export function CalendarPage() {
                   const borderClass = val === 'red' ? 'border-l-2 border-l-rose-500' :
                                       val === 'green' ? 'border-l-2 border-l-emerald-500' :
                                       val === 'blue' ? 'border-l-2 border-l-blue-500' :
-                                      val === 'yellow' ? 'border-l-2 border-l-amber-500' : 'border-l-2 border-l-zinc-400'
+                                      val === 'yellow' ? 'border-l-2 border-l-amber-500' : 'border-l-2 border-l-zinc-500'
                   return (
                     <button
                       key={val}
                       onClick={() => setForm(f => ({ ...f, color: val }))}
                       className={cn(
-                        'px-2.5 py-1.5 rounded-lg text-[10px] font-bold border border-zinc-200 bg-white transition-all cursor-pointer',
+                        'px-2.5 py-1.5 rounded-lg text-[10px] font-bold border border-zinc-800 bg-zinc-900 text-zinc-300 transition-all cursor-pointer',
                         borderClass,
-                        form.color === val ? 'ring-1 ring-zinc-950 ring-offset-0' : ''
+                        form.color === val ? 'ring-1 ring-white ring-offset-0' : ''
                       )}
                     >
                       {label}
@@ -382,7 +385,7 @@ export function CalendarPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>取消</Button>
+            <Button variant="outline" className="border-zinc-800 text-zinc-400" onClick={() => setDialogOpen(false)}>取消</Button>
             <Button onClick={handleSaveEvent} disabled={saving}>
               {saving ? '正在保存...' : '添加日程'}
             </Button>

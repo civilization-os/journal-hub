@@ -146,17 +146,17 @@ export function JournalsPage() {
         </Button>
       }
     >
-      <div className="flex gap-6 h-[calc(100vh-10rem)] w-full">
+      <div className="flex flex-col lg:flex-row gap-6 lg:h-[calc(100vh-10rem)] w-full text-zinc-100">
         {/* Journal List */}
-        <div className="w-72 shrink-0 flex flex-col gap-4">
+        <div className="w-full lg:w-72 shrink-0 flex flex-col gap-4 lg:h-full">
           {/* Search */}
           <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-550" />
             <Input
               placeholder="搜索日志标题或内容..."
               value={search}
               onChange={e => handleSearch(e.target.value)}
-              className="pl-8"
+              className="pl-8 bg-card border-zinc-800 focus:border-zinc-500"
             />
           </div>
 
@@ -165,15 +165,15 @@ export function JournalsPage() {
             {loading && (
               <div className="space-y-2 pt-2">
                 {[0, 1, 2, 3].map(i => (
-                  <div key={i} className="rounded-lg border border-zinc-200 p-3.5 bg-white animate-pulse space-y-2">
-                    <div className="h-3.5 bg-zinc-100 rounded w-3/4" />
-                    <div className="h-2.5 bg-zinc-100 rounded w-1/2" />
+                  <div key={i} className="rounded-lg border border-zinc-850 p-3.5 bg-card animate-pulse space-y-2">
+                    <div className="h-3.5 bg-zinc-800 rounded w-3/4" />
+                    <div className="h-2.5 bg-zinc-800 rounded w-1/2" />
                   </div>
                 ))}
               </div>
             )}
             {!loading && journals.length === 0 && (
-              <div className="text-center py-10 text-xs text-zinc-500 border border-dashed border-zinc-200 rounded-lg bg-zinc-50/50">
+              <div className="text-center py-10 text-xs text-zinc-500 border border-dashed border-zinc-800 rounded-lg bg-zinc-900/10">
                 没有任何日志记录
               </div>
             )}
@@ -181,27 +181,27 @@ export function JournalsPage() {
               <button
                 key={j.id}
                 onClick={() => setSelectedJournal(j)}
-                className={`w-full text-left rounded-lg p-3.5 transition-all duration-200 border border-zinc-200/60 bg-white ${
+                className={`w-full text-left rounded-lg p-3.5 transition-all duration-200 border border-zinc-850 bg-card ${
                   selectedJournal?.id === j.id
-                    ? 'border-l-2 border-l-zinc-950 border-zinc-300 shadow-sm'
-                    : 'hover:border-zinc-300 hover:shadow-xs'
+                    ? 'border-l-2 border-l-white border-zinc-700 shadow-md bg-zinc-900/40'
+                    : 'hover:border-zinc-700 hover:bg-zinc-900/20 hover:shadow-sm'
                 }`}
               >
                 <div className="flex items-start justify-between gap-2">
-                  <span className="text-xs font-bold text-zinc-900 truncate">{j.title || '无标题日志'}</span>
+                  <span className="text-xs font-bold text-zinc-200 truncate">{j.title || '无标题日志'}</span>
                   {j.mood && (
                     <span className="shrink-0 text-sm">
                       {MOODS.find(m => m.value === j.mood)?.emoji}
                     </span>
                   )}
                 </div>
-                <p className="text-[11px] text-zinc-500 mt-1.5 line-clamp-2 leading-relaxed">
+                <p className="text-[11px] text-zinc-400 mt-1.5 line-clamp-2 leading-relaxed">
                   {j.content || '暂无内容'}
                 </p>
-                <div className="flex items-center gap-2 mt-3 text-[10px] text-zinc-400 font-semibold">
+                <div className="flex items-center gap-2 mt-3 text-[10px] text-zinc-500 font-semibold">
                   <span>{j.date}</span>
                   {j.tags.slice(0, 2).map(tag => (
-                    <span key={tag} className="border border-zinc-200 rounded px-1.5 py-0.5 bg-zinc-50">{tag}</span>
+                    <span key={tag} className="border border-zinc-800 rounded px-1.5 py-0.5 bg-zinc-900">{tag}</span>
                   ))}
                 </div>
               </button>
@@ -210,42 +210,42 @@ export function JournalsPage() {
         </div>
 
         {/* Journal Detail */}
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 lg:h-full min-h-[400px]">
           {!selectedJournal ? (
-            <div className="h-full flex items-center justify-center text-xs text-zinc-500 border border-dashed border-zinc-200 rounded-lg bg-zinc-50/50">
+            <div className="h-full flex items-center justify-center text-xs text-zinc-500 border border-dashed border-zinc-800 rounded-lg bg-zinc-900/10">
               请从左侧选择一篇日志开始阅读
             </div>
           ) : (
-            <div className="bg-white border border-zinc-200 rounded-lg p-6 space-y-6 h-full overflow-y-auto flex flex-col justify-between">
+            <div className="bg-card border border-zinc-850 rounded-xl p-6 space-y-6 h-full overflow-y-auto flex flex-col justify-between shadow-sm">
               <div className="space-y-6">
-                <div className="flex items-start justify-between gap-4 border-b border-zinc-100 pb-5">
+                <div className="flex items-start justify-between gap-4 border-b border-zinc-850 pb-5">
                   <div className="space-y-2">
-                    <h2 className="text-base font-bold text-zinc-900">{selectedJournal.title || '无标题日志'}</h2>
-                    <div className="flex items-center gap-3 text-xs text-zinc-500 font-medium">
+                    <h2 className="text-base font-bold text-zinc-100">{selectedJournal.title || '无标题日志'}</h2>
+                    <div className="flex items-center gap-3 text-xs text-zinc-400 font-semibold">
                       <span>{selectedJournal.date}</span>
                       {mood && (
                         <span className="flex items-center gap-1">
-                          <Smile className="h-3.5 w-3.5 text-zinc-400" /> {mood.emoji} {mood.label}
+                          <Smile className="h-3.5 w-3.5 text-zinc-500" /> {mood.emoji} {mood.label}
                         </span>
                       )}
                     </div>
                     {selectedJournal.tags.length > 0 && (
                       <div className="flex items-center gap-1.5 flex-wrap pt-1">
-                        <Tag className="h-3 w-3 text-zinc-400" />
+                        <Tag className="h-3 w-3 text-zinc-500" />
                         {selectedJournal.tags.map(tag => (
-                          <Badge key={tag} variant="outline">{tag}</Badge>
+                          <Badge key={tag} variant="outline" className="border-zinc-800 text-zinc-400">{tag}</Badge>
                         ))}
                       </div>
                     )}
                   </div>
                   <div className="flex gap-2 shrink-0">
-                    <Button variant="outline" size="sm" onClick={() => openEdit(selectedJournal)}>
+                    <Button variant="outline" size="sm" className="border-zinc-800 text-zinc-300 hover:text-white" onClick={() => openEdit(selectedJournal)}>
                       <Edit2 className="h-3.5 w-3.5" /> 编辑
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
-                      className="text-rose-600 border-rose-100 hover:bg-rose-50"
+                      className="text-rose-400 border-rose-950/50 hover:bg-rose-950/20 hover:text-rose-300"
                       onClick={() => handleDelete(selectedJournal.id)}
                     >
                       <Trash2 className="h-3.5 w-3.5" /> 删除
@@ -253,12 +253,12 @@ export function JournalsPage() {
                   </div>
                 </div>
 
-                <div className="text-xs text-zinc-900 leading-relaxed white-space-pre-wrap font-medium">
-                  {selectedJournal.content || <p className="text-zinc-400 italic">日志内容为空</p>}
+                <div className="text-xs text-zinc-200 leading-relaxed white-space-pre-wrap font-medium">
+                  {selectedJournal.content || <p className="text-zinc-500 italic">日志内容为空</p>}
                 </div>
               </div>
 
-              <div className="text-[10px] text-zinc-400 font-semibold border-t border-zinc-100 pt-4 flex justify-between">
+              <div className="text-[10px] text-zinc-500 font-semibold border-t border-zinc-850 pt-4 flex justify-between">
                 <span>创建于 {formatRelative(selectedJournal.created_at)}</span>
                 <span>更新于 {formatRelative(selectedJournal.updated_at)}</span>
               </div>
@@ -269,7 +269,7 @@ export function JournalsPage() {
 
       {/* Edit/Create Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-card border-zinc-800">
           <DialogHeader>
             <DialogTitle>{editingId ? '编辑日志' : '写新日志'}</DialogTitle>
           </DialogHeader>
@@ -279,7 +279,7 @@ export function JournalsPage() {
               placeholder="日志标题..."
               value={form.title}
               onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-              className="text-sm font-bold border-0 border-b border-zinc-200 rounded-none px-0 py-2 focus:border-zinc-900 focus:shadow-none"
+              className="text-sm font-bold border-0 border-b border-zinc-850 rounded-none px-0 py-2 focus:border-white focus:shadow-none bg-transparent"
             />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -289,17 +289,18 @@ export function JournalsPage() {
                   type="date"
                   value={form.date}
                   onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
+                  className="bg-zinc-900 border-zinc-800"
                 />
               </div>
               <div>
                 <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1 block">今日心情</label>
                 <Select value={form.mood} onValueChange={(v: string) => setForm(f => ({ ...f, mood: v }))}>
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-zinc-900 border-zinc-800 text-zinc-200">
                     <SelectValue placeholder="选择心情..." />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-zinc-900 border-zinc-800">
                     {MOODS.map(m => (
-                      <SelectItem key={m.value} value={m.value}>
+                      <SelectItem key={m.value} value={m.value} className="hover:bg-zinc-800 text-zinc-200">
                         {m.emoji} {m.label}
                       </SelectItem>
                     ))}
@@ -314,6 +315,7 @@ export function JournalsPage() {
                 content={form.content}
                 onChange={text => setForm(f => ({ ...f, content: text }))}
                 minHeight="240px"
+                className="border-zinc-800 bg-zinc-900"
               />
             </div>
 
@@ -326,9 +328,9 @@ export function JournalsPage() {
                   value={tagInput}
                   onChange={e => setTagInput(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addTag())}
-                  className="flex-1"
+                  className="flex-1 bg-zinc-900 border-zinc-800"
                 />
-                <Button type="button" variant="outline" size="sm" onClick={addTag}>添加</Button>
+                <Button type="button" variant="outline" size="sm" className="border-zinc-800 text-zinc-300" onClick={addTag}>添加</Button>
               </div>
               {form.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mt-3">
@@ -336,7 +338,7 @@ export function JournalsPage() {
                     <Badge
                       key={tag}
                       variant="outline"
-                      className="cursor-pointer hover:border-rose-300 hover:text-rose-600 transition-colors"
+                      className="cursor-pointer border-zinc-800 text-zinc-400 hover:border-rose-950/80 hover:text-rose-400 transition-colors"
                       onClick={() => setForm(f => ({ ...f, tags: f.tags.filter(t => t !== tag) }))}
                     >
                       {tag} ×
@@ -348,7 +350,7 @@ export function JournalsPage() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>取消</Button>
+            <Button variant="outline" className="border-zinc-800 text-zinc-400" onClick={() => setDialogOpen(false)}>取消</Button>
             <Button onClick={handleSave} disabled={saving}>
               {saving ? '正在保存...' : editingId ? '保存日志' : '创建日志'}
             </Button>
