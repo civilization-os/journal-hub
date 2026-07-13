@@ -38,10 +38,12 @@ router.get('/day/:date', (req, res) => {
     const events = db.prepare('SELECT * FROM calendar_events WHERE start_date = ? ORDER BY created_at ASC').all(date);
 
     res.json({
-      date,
-      journals: journals.map(j => ({ ...j, tags: JSON.parse(j.tags) })),
-      todos: todos.map(t => ({ ...t, tags: JSON.parse(t.tags), completed: !!t.completed })),
-      events: events.map(e => ({ ...e, all_day: !!e.all_day })),
+      data: {
+        date,
+        journals: journals.map(j => ({ ...j, tags: JSON.parse(j.tags) })),
+        todos: todos.map(t => ({ ...t, tags: JSON.parse(t.tags), completed: !!t.completed })),
+        events: events.map(e => ({ ...e, all_day: !!e.all_day })),
+      }
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

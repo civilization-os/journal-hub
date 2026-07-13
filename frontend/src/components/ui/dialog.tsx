@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { X } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 interface DialogProps {
   open?: boolean
@@ -31,13 +32,13 @@ export function Dialog({ open = false, onOpenChange, children }: DialogProps) {
   )
 }
 
-export function DialogTrigger({ children, ...props }: any) {
+export function DialogTrigger({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) {
   const ctx = React.useContext(DialogContext)
   if (!ctx) return null
-  
-  const child = React.Children.only(children)
+
+  const child = React.Children.only(children) as React.ReactElement<{ onClick?: React.MouseEventHandler }>
   return React.cloneElement(child, {
-    onClick: (e: any) => {
+    onClick: (e: React.MouseEvent) => {
       child.props.onClick?.(e)
       ctx.setOpen(true)
     },
@@ -52,24 +53,38 @@ export const DialogContent = React.forwardRef<
   const ctx = React.useContext(DialogContext)
   if (!ctx || !ctx.open) return null
 
+  React.useEffect(() => {
+    if (!ctx.open) return
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        ctx.setOpen(false)
+      }
+    }
+    document.addEventListener('keydown', handleEscape)
+    return () => document.removeEventListener('keydown', handleEscape)
+  }, [ctx.open, ctx])
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-black/15 backdrop-blur-[1px] transition-opacity duration-200" 
+      <div
+        className="absolute inset-0 bg-black/15 backdrop-blur-[1px] transition-opacity duration-200"
         onClick={() => ctx.setOpen(false)}
       />
-      
+
       {/* Content box */}
       <div
         ref={ref}
-        className={`relative w-full max-w-lg bg-card border border-zinc-200/80 rounded-xl shadow-md p-6 animate-in zoom-in-95 duration-150 flex flex-col gap-4 z-10 ${className}`}
+        className={cn(
+          'relative w-full max-w-lg bg-background border rounded-xl shadow-lg p-6 animate-in zoom-in-95 duration-200 flex flex-col gap-4 z-10',
+          className
+        )}
         {...props}
       >
         {children}
-        <button 
+        <button
           onClick={() => ctx.setOpen(false)}
-          className="absolute right-4 top-4 rounded-lg p-1 text-zinc-400 hover:text-zinc-600 transition-colors focus-visible:outline-none cursor-pointer"
+          className="absolute right-4 top-4 rounded-md p-1 text-muted-foreground hover:bg-secondary transition-colors focus-visible:outline-none cursor-pointer"
         >
           <X className="h-4 w-4" />
         </button>
@@ -80,7 +95,7 @@ export const DialogContent = React.forwardRef<
 DialogContent.displayName = 'DialogContent'
 
 export const DialogHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={`space-y-1 ${className}`} {...props} />
+  <div className={cn('space-y-1', className)} {...props} />
 )
 
 export const DialogTitle = React.forwardRef<
@@ -89,7 +104,7 @@ export const DialogTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <h3
     ref={ref}
-    className={`text-sm font-bold text-zinc-950 leading-tight ${className}`}
+    className={cn('text-lg font-bold leading-none tracking-tight text-foreground', className)}
     {...props}
   />
 ))
@@ -101,12 +116,12 @@ export const DialogDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <p
     ref={ref}
-    className={`text-xs text-zinc-500 mt-1 leading-relaxed ${className}`}
+    className={cn('text-sm text-muted-foreground mt-1.5', className)}
     {...props}
   />
 ))
 DialogDescription.displayName = 'DialogDescription'
 
 export const DialogFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={`flex justify-end gap-2 mt-4 ${className}`} {...props} />
+  <div className={cn('flex justify-end gap-2 mt-4', className)} {...props} />
 )

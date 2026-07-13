@@ -13,10 +13,12 @@ interface ToastStore {
   dismissToast: (id: string) => void
 }
 
+let toastIdCounter = 0
+
 export const useToastStore = create<ToastStore>((set) => ({
   toasts: [],
   addToast: (toast) => {
-    const id = Math.random().toString(36).slice(2)
+    const id = String(++toastIdCounter)
     set((state) => ({
       toasts: [...state.toasts, { ...toast, id }],
     }))

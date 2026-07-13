@@ -22,7 +22,8 @@ export function formatRelative(dateStr: string): string {
 }
 
 export function todayStr(): string {
-  return new Date().toISOString().substring(0, 10)
+  const date = new Date()
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
 
 export function stripHtml(html: string): string {

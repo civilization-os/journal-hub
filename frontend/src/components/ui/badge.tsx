@@ -15,9 +15,9 @@ function Badge({
         variant === 'default' && 'bg-primary text-primary-foreground',
         variant === 'secondary' && 'bg-secondary text-secondary-foreground',
         variant === 'outline' && 'border border-border text-foreground',
-        variant === 'priority-high' && 'border border-red-200 text-red-600',
-        variant === 'priority-medium' && 'border border-amber-200 text-amber-600',
-        variant === 'priority-low' && 'border border-gray-200 text-gray-500',
+        variant === 'priority-high' && 'border border-red-500/30 text-red-400',
+        variant === 'priority-medium' && 'border border-amber-500/30 text-amber-400',
+        variant === 'priority-low' && 'border border-zinc-500/30 text-zinc-400',
         className
       )}
       {...props}
