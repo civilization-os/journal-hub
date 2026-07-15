@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { statsApi } from '@/lib/api'
 import { PageLayout } from '@/components/layout/PageLayout'
@@ -15,7 +15,7 @@ export function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const { toast } = useToast()
 
-  useEffect(() => {
+  const loadStats = useCallback(() => {
     statsApi.overview().then(r => {
       setStats(r.data)
       setLoading(false)
@@ -23,7 +23,14 @@ export function DashboardPage() {
       setLoading(false)
       toast({ title: '加载统计数据失败', variant: 'error' })
     })
-  }, [])
+  }, [toast])
+
+  useEffect(() => {
+    loadStats()
+    const handler = () => loadStats()
+    window.addEventListener('app_data_changed', handler)
+    return () => window.removeEventListener('app_data_changed', handler)
+  }, [loadStats])
 
   const today = todayStr()
   const formattedToday = new Date(today).toLocaleDateString('zh-CN', {

@@ -1,2 +1,9 @@
 [permissions]
 allow = ["explore"]
+
+[[plugins]]
+name    = "journal-hub"
+command = "node"
+args    = ["D:\\project\\journal-hub\\mcp-server\\index.js"]
+
+

@@ -154,7 +154,12 @@ export function TodosPage() {
     }
   }, [filter, toast])
 
-  useEffect(() => { loadTodos() }, [loadTodos])
+  useEffect(() => { 
+    loadTodos() 
+    const handler = () => loadTodos()
+    window.addEventListener('app_data_changed', handler)
+    return () => window.removeEventListener('app_data_changed', handler)
+  }, [loadTodos])
 
   useEffect(() => {
     if (searchParams.get('new')) openNew()

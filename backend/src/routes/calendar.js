@@ -3,27 +3,45 @@ const router = express.Router();
 const db = require('../db/database');
 const { v4: uuidv4 } = require('uuid');
 
-// GET /api/calendar - 获取日历事件
+// GET /api/calendar - 获取日历事件、日志、待办
 router.get('/', (req, res) => {
   try {
-    const { start, end, limit = 200 } = req.query;
-    let query = 'SELECT * FROM calendar_events WHERE 1=1';
-    const params = [];
+    const { start, end, limit = 500 } = req.query;
+    
+    let eventQuery = 'SELECT * FROM calendar_events WHERE 1=1';
+    let journalQuery = 'SELECT * FROM journals WHERE 1=1';
+    let todoQuery = 'SELECT * FROM todos WHERE 1=1';
+    
+    const eventParams = [];
+    const journalParams = [];
+    const todoParams = [];
 
     if (start) {
-      query += ' AND start_date >= ?';
-      params.push(start);
+      eventQuery += ' AND start_date >= ?'; eventParams.push(start);
+      journalQuery += ' AND date >= ?'; journalParams.push(start);
+      todoQuery += ' AND due_date >= ?'; todoParams.push(start);
     }
     if (end) {
-      query += ' AND start_date <= ?';
-      params.push(end);
+      eventQuery += ' AND start_date <= ?'; eventParams.push(end);
+      journalQuery += ' AND date <= ?'; journalParams.push(end);
+      todoQuery += ' AND due_date <= ?'; todoParams.push(end);
     }
 
-    query += ' ORDER BY start_date ASC LIMIT ?';
-    params.push(Number(limit));
+    eventQuery += ' ORDER BY start_date ASC LIMIT ?'; eventParams.push(Number(limit));
+    journalQuery += ' ORDER BY date ASC LIMIT ?'; journalParams.push(Number(limit));
+    todoQuery += ' ORDER BY due_date ASC LIMIT ?'; todoParams.push(Number(limit));
 
-    const events = db.prepare(query).all(...params);
-    res.json({ data: events.map(e => ({ ...e, all_day: !!e.all_day })) });
+    const events = db.prepare(eventQuery).all(...eventParams);
+    const journals = db.prepare(journalQuery).all(...journalParams);
+    const todos = db.prepare(todoQuery).all(...todoParams);
+
+    res.json({ 
+      data: {
+        events: events.map(e => ({ ...e, all_day: !!e.all_day })),
+        journals: journals.map(j => ({ ...j, tags: JSON.parse(j.tags || '[]') })),
+        todos: todos.map(t => ({ ...t, tags: JSON.parse(t.tags || '[]'), completed: !!t.completed }))
+      }
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

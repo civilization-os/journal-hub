@@ -4,8 +4,12 @@ const { Server } = require('@modelcontextprotocol/sdk/server/index.js');
 const { StdioServerTransport } = require('@modelcontextprotocol/sdk/server/stdio.js');
 const { CallToolRequestSchema, ListToolsRequestSchema } = require('@modelcontextprotocol/sdk/types.js');
 const axios = require('axios');
+const { app } = require('../backend/src/app.js');
+const { exec } = require('child_process');
+const os = require('os');
 
-const API_BASE = process.env.API_BASE || 'http://localhost:3001/api';
+const PORT = process.env.PORT || 3001;
+const API_BASE = `http://localhost:${PORT}/api`;
 
 const api = axios.create({ baseURL: API_BASE, timeout: 10000 });
 
@@ -218,7 +222,28 @@ const TOOLS = [
       properties: {},
     },
   },
+  // System Tools
+  {
+    name: 'open_web_ui',
+    description: 'Open the Journal Hub Web UI in the default browser.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  },
 ];
+
+// ==================== Helper ====================
+function openBrowser(url) {
+  const platform = os.platform();
+  if (platform === 'win32') {
+    exec(`start "" "${url}"`);
+  } else if (platform === 'darwin') {
+    exec(`open "${url}"`);
+  } else {
+    exec(`xdg-open "${url}"`);
+  }
+}
 
 // ==================== Tool Handlers ====================
 async function handleTool(name, args) {
@@ -289,13 +314,18 @@ async function handleTool(name, args) {
       const res = await api.get('/stats');
       return JSON.stringify(res.data, null, 2);
     }
+    case 'open_web_ui': {
+      const url = `http://localhost:${PORT}`;
+      openBrowser(url);
+      return JSON.stringify({ message: `Opened Web UI at ${url}` }, null, 2);
+    }
     default:
       throw new Error(`Unknown tool: ${name}`);
   }
 }
 
 // ==================== MCP Server ====================
-async function main() {
+async function startMcpServer() {
   const server = new Server(
     { name: 'journal-hub-mcp', version: '1.0.0' },
     { capabilities: { tools: {} } }
@@ -319,10 +349,30 @@ async function main() {
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error('Journal Hub MCP Server running via stdio');
 }
 
-main().catch((err) => {
-  console.error('Fatal:', err);
-  process.exit(1);
-});
+async function main() {
+  // Multi-startup protection: Try to start the Web/API server and mount dist
+  const server = app.listen(PORT, () => {
+    console.error(`Journal Hub Web/API server running on http://localhost:${PORT}`);
+    startMcpServer().catch(err => {
+      console.error('Fatal MCP Error:', err);
+      process.exit(1);
+    });
+  });
+
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(`Port ${PORT} in use (multi-startup protection active). Proceeding to provide AI operation func...`);
+      startMcpServer().catch(err => {
+        console.error('Fatal MCP Error:', err);
+        process.exit(1);
+      });
+    } else {
+      console.error('Fatal Server Error:', err);
+      process.exit(1);
+    }
+  });
+}
+
+main();

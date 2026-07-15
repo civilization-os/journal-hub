@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "journal-hub": {
+      "command": "node",
+      "args": [
+        "D:\\project\\journal-hub\\mcp-server\\index.js"
+      ]
+    }
+  }
+}

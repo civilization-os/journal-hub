@@ -42,40 +42,43 @@ journal-hub/
 
 ## 🚀 启动与运行指南
 
-### 1. 后端 Express 服务
+本系统采用 **MCP 统一入口与多启动防护架构**。MCP 服务不仅提供 AI 操作能力，还负责自动启动 Web 后端并挂载前端产物。
 
-后端使用 SQLite 作为数据库，第一次运行会自动在 `backend/data/` 目录下生成数据库文件。
+### 1. 准备环境与构建前端
 
-```bash
-cd backend
-npm install
-npm run dev
-```
-*后端服务将默认运行在：`http://localhost:3001`*
-
-### 2. 前端 React 应用
+首先需要安装依赖并构建前端静态页面，以便后端能够挂载 `dist` 产物。
 
 ```bash
+# 构建前端
 cd frontend
 npm install
-npm run dev
+npm run build
+
+# 安装后端和 MCP 依赖
+cd ../backend
+npm install
+cd ../mcp-server
+npm install
 ```
-*前端页面将默认运行在：`http://localhost:5173`*
 
-### 3. MCP 服务端验证与接入
+### 2. 启动服务 (人机协同统一入口)
 
-MCP 服务端使用标准输入输出 (`stdio`) 进行通信。
+你可以直接通过启动 MCP 服务来拉起整个系统：
 
-#### 本地运行与验证
 ```bash
 cd mcp-server
-npm install
 node index.js
 ```
-*成功启动将输出：`Journal Hub MCP Server running via stdio`*
+* **首次启动（Primary）**：由于端口 3001 闲置，系统将启动 Express API 服务、挂载前端页面，并同时开启 MCP stdio 服务。你可以直接在浏览器访问 `http://localhost:3001` 使用网页端。
+* **多次启动（多启动防护）**：当你在其他 AI Agent（或新终端）中再次运行此命令时，系统会检测到端口 3001 被占用，从而触发多启动防护。此时它会优雅降级，**仅启动 MCP stdio 服务**，避免冲突。
 
-#### 接入 Claude Desktop
-若要在 Claude Desktop 客户端中直接调用 Journal Hub 的功能，请在 Claude 的配置文件 `claude_desktop_config.json` 中添加以下配置：
+### 3. AI 客户端 (MCP) 接入配置
+
+无论是使用 Linkweaver、Claude Desktop、Cursor 还是 Cline，你只需要将系统指向 `mcp-server/index.js` 即可。
+
+#### 示例：接入配置 (Claude Desktop / Cline 等)
+
+请在相应的 MCP 配置文件（如 `claude_desktop_config.json`）中添加以下配置：
 
 ```json
 {
@@ -83,15 +86,13 @@ node index.js
     "journal-hub": {
       "command": "node",
       "args": [
-        "d:/project/journal-hub/mcp-server/index.js"
-      ],
-      "env": {
-        "API_BASE": "http://localhost:3001/api"
-      }
+        "绝对路径/到/你的/journal-hub/mcp-server/index.js"
+      ]
     }
   }
 }
 ```
+*配置完成后，当 AI 客户端启动该命令时，它将自动提供 AI 操作能力，并在本地没有服务时自动为你启动完整的 `http://localhost:3001` Web 页面服务！*
 
 ---
 

@@ -13,7 +13,7 @@ export function Sidebar() {
   const location = useLocation()
 
   return (
-    <aside className="h-screen w-64 border-r bg-muted/30 flex flex-col justify-between py-6 shrink-0 relative">
+    <aside className="h-screen sticky top-0 w-64 border-r bg-muted/30 flex flex-col justify-between py-6 shrink-0">
       <div className="flex flex-col gap-8 w-full px-4">
         {/* Logo */}
         <div className="flex items-center gap-3 px-2">

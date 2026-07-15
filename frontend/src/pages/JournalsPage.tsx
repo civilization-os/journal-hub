@@ -67,9 +67,12 @@ export function JournalsPage() {
   }, [toast])
 
   useEffect(() => {
-    loadJournals()
+    loadJournals(search)
+    const handler = () => loadJournals(search)
+    window.addEventListener('app_data_changed', handler)
+    return () => window.removeEventListener('app_data_changed', handler)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loadJournals])
+  }, [loadJournals, search])
 
   useEffect(() => {
     if (searchParams.get('new')) openNew()

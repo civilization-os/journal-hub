@@ -52,9 +52,15 @@ export const todoApi = {
   delete: (id: string) => del<void>(`/todos/${id}`),
 }
 
+export interface CalendarListResponse {
+  events: CalendarEvent[];
+  journals: Journal[];
+  todos: Todo[];
+}
+
 // Calendar API
 export const calendarApi = {
-  list: (params?: Record<string, unknown>) => get<CalendarEvent[]>('/calendar', params),
+  list: (params?: Record<string, unknown>) => get<CalendarListResponse>('/calendar', params),
   getDay: (date: string) => get<DayData>(`/calendar/day/${date}`),
   get: (id: string) => get<CalendarEvent>(`/calendar/${id}`),
   create: (data: Record<string, unknown>) => post<CalendarEvent>('/calendar', data),
