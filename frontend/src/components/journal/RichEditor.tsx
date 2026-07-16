@@ -51,16 +51,16 @@ export function RichEditor({
   ]
 
   return (
-    <div className={cn('border rounded-lg overflow-hidden focus-within:border-zinc-500 transition-all duration-200', className)}>
+    <div className={cn('border rounded-lg overflow-hidden focus-within:border-primary transition-all duration-200', className)}>
       {/* Toolbar */}
-      <div className="flex items-center gap-1 border-b border-inherit px-2 py-1.5 bg-zinc-900/50 flex-wrap">
+      <div className="flex items-center gap-1 border-b border-inherit px-2 py-1.5 bg-muted/50 flex-wrap">
         {toolbarItems.map(({ icon: Icon, action, title }, i) => (
           <button
             key={i}
             type="button"
             title={title}
             onClick={action}
-            className="p-1.5 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-md transition-all cursor-pointer"
+            className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-all cursor-pointer"
           >
             <Icon className="h-4 w-4" />
           </button>
@@ -74,7 +74,7 @@ export function RichEditor({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         style={{ minHeight }}
-        className="w-full px-4 py-3 text-xs text-zinc-100 leading-relaxed placeholder:text-zinc-500 resize-y border-none focus:outline-none focus:ring-0 bg-transparent"
+        className="w-full px-4 py-3 text-sm text-foreground leading-relaxed placeholder:text-muted-foreground resize-y border-none focus:outline-none focus:ring-0 bg-transparent"
       />
     </div>
   )

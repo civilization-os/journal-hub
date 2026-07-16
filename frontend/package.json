@@ -1,7 +1,7 @@
 {
-  "name": "frontend",
+  "name": "journal-hub",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -18,11 +18,16 @@
     "vite": "^8.1.1"
   },
   "dependencies": {
+    "@tailwindcss/typography": "^0.5.20",
     "axios": "^1.18.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
     "lucide-react": "^1.24.0",
+    "lunar-javascript": "^1.7.7",
+    "react-markdown": "^10.1.0",
     "react-router-dom": "^7.18.1",
+    "rehype-raw": "^7.0.0",
+    "remark-gfm": "^4.0.1",
     "tailwind-merge": "^3.6.0",
     "zustand": "^5.0.14"
   }

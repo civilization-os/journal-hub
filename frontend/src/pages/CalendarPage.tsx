@@ -1,9 +1,11 @@
 import { useEffect, useState, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   format, startOfMonth, endOfMonth, eachDayOfInterval, getDay,
   addMonths, subMonths, isSameMonth, parseISO, startOfWeek, endOfWeek
 } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
+import { Solar, HolidayUtil } from 'lunar-javascript'
 import { calendarApi, CalendarListResponse } from '@/lib/api'
 import { CalendarEvent, DayData, Journal, Todo } from '@/types'
 import { PageLayout } from '@/components/layout/PageLayout'
@@ -25,6 +27,7 @@ interface EventForm {
 }
 
 export function CalendarPage() {
+  const navigate = useNavigate()
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [monthData, setMonthData] = useState<CalendarListResponse>({ events: [], journals: [], todos: [] })
   const [selectedDate, setSelectedDate] = useState<string | null>(todayStr())
@@ -154,10 +157,10 @@ export function CalendarPage() {
         </Button>
       }
     >
-      <div className="flex-1 flex flex-col xl:flex-row gap-6 w-full min-h-[600px] h-full pb-6">
+      <div className="flex-1 flex flex-col xl:flex-row gap-6 w-full min-h-[600px] pb-6">
         
         {/* Main Calendar Grid Area */}
-        <div className="flex-1 flex flex-col min-w-0 h-full bg-card border rounded-3xl shadow-sm overflow-hidden p-6">
+        <div className="flex-1 flex flex-col min-w-0 bg-card border rounded-3xl shadow-sm overflow-hidden p-6">
           {/* Calendar Header */}
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
@@ -204,24 +207,52 @@ export function CalendarPage() {
               const isSelected = dateStr === selectedDate
               const isCurrentMonth = isSameMonth(day, currentMonth)
 
+              const solar = Solar.fromYmd(day.getFullYear(), day.getMonth() + 1, day.getDate())
+              const lunar = solar.getLunar()
+              const holiday = HolidayUtil.getHoliday(day.getFullYear(), day.getMonth() + 1, day.getDate())
+              
+              let lunarText = lunar.getJieQi() || lunar.getFestivals()[0] || solar.getFestivals()[0] || lunar.getDayInChinese()
+              if (lunar.getDayInChinese() === '初一') {
+                lunarText = lunar.getMonthInChinese() + '月' + (lunarText !== '初一' ? ' ' + lunarText : '')
+              }
+              const isHolidayTarget = holiday && holiday.getTarget() === dateStr
+              if (isHolidayTarget) {
+                lunarText = holiday.getName()
+              }
+
               return (
                 <div
                   key={dateStr}
                   onClick={() => handleDayClick(dateStr)}
                   className={cn(
                     'bg-card min-h-[100px] p-2 cursor-pointer transition-all duration-300 flex flex-col hover:bg-muted/30 group relative',
-                    isSelected && 'bg-primary/5 ring-1 ring-inset ring-primary/20 z-10',
+                    isToday && 'bg-blue-500/5 ring-2 ring-inset ring-blue-500/60 z-20 shadow-[0_0_15px_rgba(59,130,246,0.3)]',
+                    isSelected && !isToday && 'bg-primary/5 ring-1 ring-inset ring-primary/20 z-10',
                     !isCurrentMonth && 'opacity-40 bg-muted/5'
                   )}
                 >
                   <div className="flex justify-between items-start mb-2">
-                    <span className={cn(
-                      'w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold transition-all',
-                      isToday ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/20' : 'text-foreground group-hover:text-primary',
-                      isSelected && !isToday && 'bg-primary/10 text-primary'
-                    )}>
-                      {format(day, 'd')}
-                    </span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className={cn(
+                        'w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold transition-all shrink-0',
+                        isToday ? 'bg-blue-500 text-white shadow-md shadow-blue-500/50' : 'text-foreground group-hover:text-primary',
+                        isSelected && !isToday && 'bg-primary/10 text-primary'
+                      )}>
+                        {format(day, 'd')}
+                      </span>
+                      <span className={cn("text-[11px] font-medium truncate max-w-[60px]", isHolidayTarget || lunar.getJieQi() || lunar.getFestivals().length > 0 ? "text-emerald-500 dark:text-emerald-400 font-bold" : "text-muted-foreground")}>
+                        {lunarText}
+                      </span>
+                      {isToday && <span className="text-[10px] font-bold text-blue-500 px-1.5 py-0.5 bg-blue-500/10 rounded-sm shadow-[0_0_8px_rgba(59,130,246,0.2)] shrink-0">今日</span>}
+                    </div>
+                    {holiday && (
+                      <span className={cn(
+                        "text-[10px] font-bold px-1.5 py-0.5 rounded-sm shrink-0",
+                        holiday.isWork() ? "bg-rose-500/10 text-rose-600 dark:text-rose-400" : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                      )}>
+                        {holiday.isWork() ? '班' : '休'}
+                      </span>
+                    )}
                   </div>
                   
                   {/* Event Pills */}
@@ -271,7 +302,8 @@ export function CalendarPage() {
         </div>
 
         {/* Side Panel: Daily Details */}
-        <div className="w-full xl:w-80 shrink-0 flex flex-col gap-4">
+        <div className="w-full xl:w-80 shrink-0 relative">
+          <div className="flex flex-col gap-4 xl:absolute xl:inset-0 h-full">
           {selectedDate ? (
             <div className="bg-card border rounded-3xl p-6 shadow-sm flex-1 overflow-y-auto scrollbar-thin">
               <div className="flex items-center justify-between border-b border-border/50 pb-5 mb-5">
@@ -333,11 +365,15 @@ export function CalendarPage() {
                     <BookOpen className="h-4 w-4 text-primary" />
                     <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">随想日志</h4>
                   </div>
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {dayData?.journals && dayData.journals.length > 0 ? (
                       dayData.journals.map(j => (
-                        <div key={j.id} className="flex items-center gap-3 border border-border/50 bg-card rounded-2xl p-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 cursor-pointer group">
-                          <div className="bg-primary/10 p-2 rounded-xl text-primary group-hover:scale-110 transition-transform">
+                        <div 
+                          key={j.id} 
+                          onClick={() => navigate(`/journals/${j.id}`)}
+                          className="flex items-center gap-2.5 border border-border/50 bg-card rounded-xl p-3 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 cursor-pointer group"
+                        >
+                          <div className="bg-primary/10 p-1.5 rounded-lg text-primary group-hover:scale-110 transition-transform">
                             <BookOpen className="h-4 w-4" />
                           </div>
                           <span className="text-sm font-bold text-foreground truncate group-hover:text-primary transition-colors">{j.title || '无标题日志'}</span>
@@ -389,6 +425,7 @@ export function CalendarPage() {
               <p className="font-medium text-sm">选择一个日期查看详情</p>
             </div>
           )}
+          </div>
         </div>
       </div>
 

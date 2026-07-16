@@ -11,8 +11,9 @@ import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToast } from '@/components/ui/toaster'
-import { Plus, Trash2, Edit2 } from 'lucide-react'
+import { Plus, Trash2, Edit2, List, CalendarDays } from 'lucide-react'
 import { todayStr, cn } from '@/lib/utils'
+import { TodoGanttChart } from '@/components/todo/TodoGanttChart'
 
 const PRIORITIES: { value: Priority; label: string }[] = [
   { value: 'high', label: '高优先级' },
@@ -59,9 +60,9 @@ function TodoItem({
                           'border-l-2 border-l-zinc-600'
 
   return (
-    <div className={`group flex items-start gap-4 rounded-xl px-5 py-4 border bg-card shadow-sm hover:shadow-md transition-all duration-300 ${priorityBorder} ${
+    <div className={`group flex items-start gap-3 rounded-xl px-4 py-4 border bg-card shadow-sm hover:shadow-md transition-all duration-300 ${priorityBorder} ${
       todo.completed ? 'opacity-50 grayscale' : ''
-    }`}>
+    } h-full relative`}>
       <Checkbox
         checked={todo.completed}
         onCheckedChange={() => onToggle(todo.id)}
@@ -85,21 +86,21 @@ function TodoItem({
             </span>
           )}
           {todo.tags.map(tag => (
-            <span key={tag} className="text-xs font-medium border rounded-md px-2 py-0.5 bg-secondary/50 text-secondary-foreground">{tag}</span>
+            <span key={tag} className="text-xs font-medium border rounded-md px-2 py-0.5 bg-secondary/50 text-secondary-foreground truncate max-w-[80px]">{tag}</span>
           ))}
         </div>
       </div>
-      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-        <Button variant="ghost" size="icon-sm" onClick={() => onEdit(todo)}>
-          <Edit2 className="h-4 w-4" />
+      <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-card/80 backdrop-blur-sm rounded-md p-1 shadow-sm border border-border/50">
+        <Button variant="ghost" size="icon-sm" onClick={() => onEdit(todo)} className="h-7 w-7">
+          <Edit2 className="h-3.5 w-3.5" />
         </Button>
         <Button
           variant="ghost"
           size="icon-sm"
-          className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+          className="text-destructive hover:bg-destructive/10 hover:text-destructive h-7 w-7"
           onClick={() => onDelete(todo.id)}
         >
-          <Trash2 className="h-4 w-4" />
+          <Trash2 className="h-3.5 w-3.5" />
         </Button>
       </div>
     </div>
@@ -115,9 +116,9 @@ function Section({ title, items, onToggle, onEdit, onDelete }: {
 }) {
   if (items.length === 0) return null
   return (
-    <section className="space-y-3">
-      <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider px-1">{title}</h3>
-      <div className="space-y-3">
+    <section className="space-y-4">
+      <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider px-1">{title} ({items.length})</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4">
         {items.map(t => (
           <TodoItem key={t.id} todo={t} onToggle={onToggle} onEdit={onEdit} onDelete={onDelete} />
         ))}
@@ -130,6 +131,7 @@ export function TodosPage() {
   const [todos, setTodos] = useState<Todo[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('pending')
+  const [viewMode, setViewMode] = useState<'list' | 'gantt'>('list')
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState<TodoFormData>(emptyForm)
@@ -246,7 +248,26 @@ export function TodosPage() {
       title="待办事项"
       description={`有 ${todos.filter(t => !t.completed).length} 项任务待处理`}
       actions={
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 flex-wrap justify-end">
+          <div className="flex rounded-md border bg-muted p-1">
+            <button
+              onClick={() => setViewMode('list')}
+              className={`px-3 py-1.5 flex items-center gap-1.5 text-sm font-medium transition-all rounded-sm ${
+                viewMode === 'list' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <List className="h-4 w-4" /> 列表
+            </button>
+            <button
+              onClick={() => setViewMode('gantt')}
+              className={`px-3 py-1.5 flex items-center gap-1.5 text-sm font-medium transition-all rounded-sm ${
+                viewMode === 'gantt' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <CalendarDays className="h-4 w-4" /> 甘特图
+            </button>
+          </div>
+
           <div className="flex rounded-md border bg-muted p-1">
             {(['pending', 'all', 'completed'] as const).map(f => (
               <button
@@ -266,7 +287,12 @@ export function TodosPage() {
         </div>
       }
     >
-      <div className="max-w-3xl space-y-8 w-full">
+      {viewMode === 'gantt' ? (
+        <div className="w-full">
+          <TodoGanttChart todos={todos} onEdit={openEdit} />
+        </div>
+      ) : (
+        <div className="w-full space-y-10">
         {loading && (
           <div className="space-y-3">
             {[0, 1, 2, 3].map(i => (
@@ -312,9 +338,10 @@ export function TodosPage() {
             <Section title="已完成" items={completedItems} onToggle={handleToggle} onEdit={openEdit} onDelete={handleDelete} />
           </>
         )}
-      </div>
+        </div>
+      )}
 
-      {/* Dialog */}
+      {/* Dialog for Edit/Create */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>

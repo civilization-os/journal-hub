@@ -4,8 +4,8 @@ import { statsApi } from '@/lib/api'
 import { PageLayout } from '@/components/layout/PageLayout'
 import { useToast } from '@/components/ui/toaster'
 import { Stats } from '@/types'
-import { formatRelative, todayStr } from '@/lib/utils'
-import { BookOpen, CheckSquare, Calendar, Plus, ArrowRight, TrendingUp } from 'lucide-react'
+import { formatRelative, todayStr, stripHtml } from '@/lib/utils'
+import { BookOpen, CheckSquare, Calendar, Plus, ArrowRight, TrendingUp, Clock } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -32,13 +32,35 @@ export function DashboardPage() {
     return () => window.removeEventListener('app_data_changed', handler)
   }, [loadStats])
 
+  const [time, setTime] = useState(new Date())
+
+  useEffect(() => {
+    const timer = setInterval(() => setTime(new Date()), 1000)
+    return () => clearInterval(timer)
+  }, [])
+
   const today = todayStr()
-  const formattedToday = new Date(today).toLocaleDateString('zh-CN', {
+  const formattedToday = time.toLocaleDateString('zh-CN', {
     year: 'numeric', month: 'long', day: 'numeric', weekday: 'long',
   })
+  
+  const formattedTime = time.toLocaleTimeString('zh-CN', {
+    hour: '2-digit', minute: '2-digit', second: '2-digit'
+  })
+
+  const headerTitle = (
+    <div className="flex items-center gap-3">
+      <Calendar className="h-6 w-6 text-primary" />
+      <span>{formattedToday}</span>
+      <div className="flex items-center gap-1.5 ml-3 px-3 py-1 bg-secondary/80 text-secondary-foreground rounded-lg font-mono text-base border">
+        <Clock className="h-4 w-4" />
+        {formattedTime}
+      </div>
+    </div>
+  )
 
   return (
-    <PageLayout title="控制台" description={formattedToday}>
+    <PageLayout title={headerTitle}>
       <div className="space-y-8 w-full">
         {/* Welcome Hero Area */}
         <Card className="relative overflow-hidden bg-primary text-primary-foreground border-none shadow-md">
@@ -169,7 +191,7 @@ export function DashboardPage() {
                     </div>
                     {j.content && (
                       <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed transition-colors">
-                        {j.content.replace(/<[^>]*>/g, '')}
+                        {stripHtml(j.content)}
                       </p>
                     )}
                     <div className="flex items-center gap-2 mt-2">

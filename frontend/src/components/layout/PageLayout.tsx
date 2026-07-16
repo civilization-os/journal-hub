@@ -2,8 +2,8 @@ import { ReactNode } from 'react'
 
 interface PageLayoutProps {
   children: ReactNode
-  title?: string
-  description?: string
+  title?: ReactNode
+  description?: ReactNode
   actions?: ReactNode
 }
 
@@ -13,9 +13,9 @@ export function PageLayout({ children, title, description, actions }: PageLayout
       {(title || actions) && (
         <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b w-full flex justify-center">
           <div className="w-full max-w-[1400px] flex items-center justify-between px-8 py-6">
-            <div>
-              {title && <h1 className="text-2xl font-bold tracking-tight text-foreground">{title}</h1>}
-              {description && <p className="text-sm text-muted-foreground mt-1">{description}</p>}
+            <div className="flex flex-col gap-1.5">
+              {title && <div className="text-2xl font-bold tracking-tight text-foreground flex items-center">{title}</div>}
+              {description && <div className="text-sm text-muted-foreground">{description}</div>}
             </div>
             {actions && <div className="flex items-center gap-3">{actions}</div>}
           </div>

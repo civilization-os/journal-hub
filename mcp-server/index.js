@@ -327,7 +327,7 @@ async function handleTool(name, args) {
 // ==================== MCP Server ====================
 async function startMcpServer() {
   const server = new Server(
-    { name: 'journal-hub-mcp', version: '1.0.0' },
+    { name: 'journal-hub-mcp', version: '1.0.1' },
     { capabilities: { tools: {} } }
   );
 
