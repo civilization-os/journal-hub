@@ -73,4 +73,9 @@ export const statsApi = {
   overview: () => get<Stats>('/stats'),
 }
 
+// Settings API
+export const settingsApi = {
+  get: (key: string) => get<string | null>(`/settings/${key}`),
+}
+
 export default api

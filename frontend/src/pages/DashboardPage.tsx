@@ -1,27 +1,33 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import { statsApi } from '@/lib/api'
+import { statsApi, settingsApi } from '@/lib/api'
 import { PageLayout } from '@/components/layout/PageLayout'
+import { MarkdownViewer } from '@/components/journal/MarkdownViewer'
 import { useToast } from '@/components/ui/toaster'
 import { Stats } from '@/types'
 import { formatRelative, todayStr, stripHtml } from '@/lib/utils'
-import { BookOpen, CheckSquare, Calendar, Plus, ArrowRight, TrendingUp, Clock } from 'lucide-react'
+import { BookOpen, CheckSquare, Calendar, Plus, ArrowRight, TrendingUp, Clock, Sparkles } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 
 export function DashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null)
+  const [suggestion, setSuggestion] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const { toast } = useToast()
 
   const loadStats = useCallback(() => {
-    statsApi.overview().then(r => {
-      setStats(r.data)
+    Promise.all([
+      statsApi.overview(),
+      settingsApi.get('daily_suggestion')
+    ]).then(([statsRes, suggestionRes]) => {
+      setStats(statsRes.data)
+      setSuggestion(suggestionRes.data)
       setLoading(false)
     }).catch(() => {
       setLoading(false)
-      toast({ title: '加载统计数据失败', variant: 'error' })
+      toast({ title: '加载数据失败', variant: 'error' })
     })
   }, [toast])
 
@@ -64,20 +70,32 @@ export function DashboardPage() {
       <div className="space-y-8 w-full">
         {/* Welcome Hero Area */}
         <Card className="relative overflow-hidden bg-primary text-primary-foreground border-none shadow-md">
-          <CardContent className="p-8 md:p-10 relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-8">
-            <div className="space-y-4">
-              <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
-                你好，今天也是值得记录的一天。
-              </h1>
-              <p className="text-base text-primary-foreground/80 max-w-xl leading-relaxed font-medium">
-                Journal Hub 已经为您准备就绪。您今天有 <strong className="text-primary-foreground font-bold text-lg">{loading ? '...' : stats?.todos.pending || 0}</strong> 项待办任务需要跟进，目前已记录了 <strong className="text-primary-foreground font-bold text-lg">{loading ? '...' : stats?.journals.total || 0}</strong> 篇日记。
-              </p>
+          <CardContent className="p-8 md:p-10 relative z-10 flex flex-col gap-8 w-full">
+            <div className="space-y-4 w-full">
+              {suggestion ? (
+                <>
+                  <h1 className="text-2xl sm:text-3xl font-black tracking-tight flex items-center gap-2">
+                    <Sparkles className="h-6 w-6 text-yellow-300" />
+                    AI 今日建议
+                  </h1>
+                  <div className="bg-primary-foreground/10 p-4 rounded-xl border border-primary-foreground/20 shadow-inner overflow-hidden">
+                    <MarkdownViewer 
+                      content={suggestion} 
+                      className="text-primary-foreground/90 max-w-none prose-p:text-primary-foreground/90 prose-headings:text-primary-foreground prose-strong:text-primary-foreground prose-a:text-primary-foreground hover:prose-a:text-primary-foreground/80 prose-code:text-primary-foreground prose-li:text-primary-foreground/90 prose-blockquote:text-primary-foreground/70 prose-blockquote:border-primary-foreground/30 !prose-sm"
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
+                    你好，今天也是值得记录的一天。
+                  </h1>
+                  <p className="text-base text-primary-foreground/80 max-w-xl leading-relaxed font-medium">
+                    Journal Hub 已经为您准备就绪。您今天有 <strong className="text-primary-foreground font-bold text-lg">{loading ? '...' : stats?.todos.pending || 0}</strong> 项待办任务需要跟进，目前已记录了 <strong className="text-primary-foreground font-bold text-lg">{loading ? '...' : stats?.journals.total || 0}</strong> 篇日记。
+                  </p>
+                </>
+              )}
             </div>
-            <Link to="/journals?new=1">
-              <Button size="lg" variant="secondary" className="font-bold px-6">
-                <Plus className="h-5 w-5 mr-2" /> 开启今日日志
-              </Button>
-            </Link>
           </CardContent>
         </Card>
 

@@ -2,7 +2,7 @@
 
 const { Server } = require('@modelcontextprotocol/sdk/server/index.js');
 const { StdioServerTransport } = require('@modelcontextprotocol/sdk/server/stdio.js');
-const { CallToolRequestSchema, ListToolsRequestSchema } = require('@modelcontextprotocol/sdk/types.js');
+const { CallToolRequestSchema, ListToolsRequestSchema, ListPromptsRequestSchema, GetPromptRequestSchema } = require('@modelcontextprotocol/sdk/types.js');
 const axios = require('axios');
 const { app } = require('../backend/src/app.js');
 const { exec } = require('child_process');
@@ -23,6 +23,8 @@ const TOOLS = [
       type: 'object',
       properties: {
         date: { type: 'string', description: 'Filter by date (YYYY-MM-DD)' },
+        start_date: { type: 'string', description: 'Filter by start date (YYYY-MM-DD)' },
+        end_date: { type: 'string', description: 'Filter by end date (YYYY-MM-DD)' },
         tag: { type: 'string', description: 'Filter by tag name' },
         search: { type: 'string', description: 'Search in title and content' },
         limit: { type: 'number', description: 'Max results (default 50)' },
@@ -105,6 +107,9 @@ const TOOLS = [
         priority: { type: 'string', enum: ['high', 'medium', 'low'], description: 'Filter by priority' },
         tag: { type: 'string', description: 'Filter by tag' },
         due_date: { type: 'string', description: 'Filter by due date (YYYY-MM-DD)' },
+        start_date: { type: 'string', description: 'Filter by start date (YYYY-MM-DD)' },
+        end_date: { type: 'string', description: 'Filter by end date (YYYY-MM-DD)' },
+        search: { type: 'string', description: 'Search query for title, description, or tags' },
         limit: { type: 'number' },
       },
     },
@@ -231,6 +236,33 @@ const TOOLS = [
       properties: {},
     },
   },
+  {
+    name: 'generate_daily_suggestion_workflow',
+    description: 'Call this tool when the user asks to generate a daily suggestion, daily summary, 今日摘要, 今日建议, or 今日推荐. This tool returns step-by-step instructions for you (the AI) to follow.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  },
+  {
+    name: 'generate_weekly_review_workflow',
+    description: 'Call this tool when the user asks to generate a weekly review, 月度回顾, 每周总结, or 个人周报. This tool returns step-by-step instructions for you (the AI) to follow.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  },
+  {
+    name: 'set_daily_suggestion',
+    description: 'Set or update the daily AI suggestion displayed on the Dashboard.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        suggestion: { type: 'string', description: 'The generated daily suggestion/encouragement' },
+      },
+      required: ['suggestion'],
+    },
+  },
 ];
 
 // ==================== Helper ====================
@@ -319,6 +351,27 @@ async function handleTool(name, args) {
       openBrowser(url);
       return JSON.stringify({ message: `Opened Web UI at ${url}` }, null, 2);
     }
+    case 'generate_daily_suggestion_workflow': {
+      return `INSTRUCTION TO AI: Please execute the following sequence of steps:
+1. Call the 'todo_list' tool to fetch today's pending todos.
+2. Call the 'journal_list' tool to fetch today's journals.
+3. Analyze the data and generate a 50-word encouraging daily suggestion.
+4. Call the 'set_daily_suggestion' tool with your generated suggestion.
+5. Inform the user that the dashboard has been updated.`;
+    }
+    case 'generate_weekly_review_workflow': {
+      return `INSTRUCTION TO AI: Please execute the following sequence of steps:
+1. Determine the start and end dates for the past 7 days (or the specific time period requested).
+2. Call the 'todo_list' tool with 'start_date' and 'end_date' to fetch todos from this period.
+3. Call the 'journal_list' tool with 'start_date' and 'end_date' to fetch journals from this period.
+4. Synthesize the collected data to write a comprehensive, reflective "Weekly Review". Analyze accomplishments, mood trends, and pending tasks.
+5. Call the 'journal_create' tool to save this review as a new journal entry. Set the title to "本周回顾 - [Date Range]" and include "#weekly-review" in the tags array.
+6. Inform the user that the weekly review has been saved to their journals.`;
+    }
+    case 'set_daily_suggestion': {
+      const res = await api.post('/settings/daily_suggestion', { value: args.suggestion });
+      return JSON.stringify(res.data, null, 2);
+    }
     default:
       throw new Error(`Unknown tool: ${name}`);
   }
@@ -328,10 +381,37 @@ async function handleTool(name, args) {
 async function startMcpServer() {
   const server = new Server(
     { name: 'journal-hub-mcp', version: '1.0.1' },
-    { capabilities: { tools: {} } }
+    { capabilities: { tools: {}, prompts: {} } }
   );
 
   server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: TOOLS }));
+
+  server.setRequestHandler(ListPromptsRequestSchema, async () => ({
+    prompts: [
+      {
+        name: 'daily_suggestion_prompt',
+        description: 'Generate a daily suggestion based on today\'s todos and journals.',
+      },
+    ],
+  }));
+
+  server.setRequestHandler(GetPromptRequestSchema, async (request) => {
+    if (request.params.name === 'daily_suggestion_prompt') {
+      return {
+        description: 'Prompt to generate a daily suggestion',
+        messages: [
+          {
+            role: 'user',
+            content: {
+              type: 'text',
+              text: '请使用 todo_list 工具和 journal_list 工具读取我今天的待办事项和日记。然后，为我生成一段 50 字左右的今日鼓励与建议。生成完毕后，请必须调用 set_daily_suggestion 工具将这段建议保存，方便我在主页上查看。',
+            },
+          },
+        ],
+      };
+    }
+    throw new Error(`Unknown prompt: ${request.params.name}`);
+  });
 
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { name, arguments: args } = request.params;
@@ -353,7 +433,7 @@ async function startMcpServer() {
 
 async function main() {
   // Multi-startup protection: Try to start the Web/API server and mount dist
-  const server = app.listen(PORT, () => {
+  const server = app.listen(PORT, '0.0.0.0', () => {
     console.error(`Journal Hub Web/API server running on http://localhost:${PORT}`);
     startMcpServer().catch(err => {
       console.error('Fatal MCP Error:', err);

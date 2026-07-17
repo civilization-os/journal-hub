@@ -4,7 +4,7 @@ import { zhCN } from 'date-fns/locale'
 import { Todo } from '@/types'
 import { cn, todayStr } from '@/lib/utils'
 
-export function TodoGanttChart({ todos, onEdit }: { todos: Todo[], onEdit: (t: Todo) => void }) {
+export function TodoGanttChart({ todos, onPreview }: { todos: Todo[], onPreview: (t: Todo) => void }) {
   const { days, minDate } = useMemo(() => {
     if (todos.length === 0) return { days: [], minDate: new Date() }
     
@@ -55,7 +55,7 @@ export function TodoGanttChart({ todos, onEdit }: { todos: Todo[], onEdit: (t: T
               <div 
                 key={t.id} 
                 className="h-14 border-b flex items-center px-4 hover:bg-secondary/80 cursor-pointer text-sm truncate transition-colors group"
-                onClick={() => onEdit(t)}
+                onClick={() => onPreview(t)}
               >
                 <div className={cn("w-2.5 h-2.5 rounded-full mr-3 shrink-0 shadow-sm transition-transform group-hover:scale-125", 
                   t.priority === 'high' ? 'bg-rose-500 shadow-rose-500/50' : 
@@ -131,7 +131,7 @@ export function TodoGanttChart({ todos, onEdit }: { todos: Todo[], onEdit: (t: T
                   <div 
                     className="absolute h-9 flex items-center z-10 cursor-pointer transition-all group-hover:-translate-y-0.5"
                     style={{ left: `${left + 6}px` }}
-                    onClick={() => onEdit(t)}
+                    onClick={() => onPreview(t)}
                   >
                     {/* Colored Box */}
                     <div className={cn("h-full rounded-lg border", barColor)} style={{ width: `${barWidth}px` }} />

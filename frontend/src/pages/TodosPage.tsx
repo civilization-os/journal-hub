@@ -11,10 +11,12 @@ import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToast } from '@/components/ui/toaster'
-import { Plus, Trash2, Edit2, List, CalendarDays } from 'lucide-react'
+import { Plus, Trash2, Edit2, List, CalendarDays, Eye, Search } from 'lucide-react'
 import { todayStr, cn } from '@/lib/utils'
 import { TodoGanttChart } from '@/components/todo/TodoGanttChart'
-
+import { TodoKanbanBoard } from '@/components/todo/TodoKanbanBoard'
+import { RichEditor } from '@/components/journal/RichEditor'
+import { MarkdownViewer } from '@/components/journal/MarkdownViewer'
 const PRIORITIES: { value: Priority; label: string }[] = [
   { value: 'high', label: '高优先级' },
   { value: 'medium', label: '中优先级' },
@@ -42,11 +44,13 @@ function TodoItem({
   onToggle,
   onEdit,
   onDelete,
+  onPreview,
 }: {
   todo: Todo
   onToggle: (id: string) => void
   onEdit: (t: Todo) => void
   onDelete: (id: string) => void
+  onPreview: (t: Todo) => void
 }) {
   const priorityBadge = (p: Priority) => {
     if (p === 'high') return <Badge variant="priority-high">高</Badge>
@@ -60,15 +64,16 @@ function TodoItem({
                           'border-l-2 border-l-zinc-600'
 
   return (
-    <div className={`group flex items-start gap-3 rounded-xl px-4 py-4 border bg-card shadow-sm hover:shadow-md transition-all duration-300 ${priorityBorder} ${
+    <div className={`group flex items-stretch gap-3 rounded-xl px-4 py-4 border bg-card shadow-sm hover:shadow-md transition-all duration-300 ${priorityBorder} ${
       todo.completed ? 'opacity-50 grayscale' : ''
     } h-full relative`}>
-      <Checkbox
-        checked={todo.completed}
-        onCheckedChange={() => onToggle(todo.id)}
-        className="mt-1"
-      />
-      <div className="flex-1 min-w-0">
+      <div className="mt-1 shrink-0">
+        <Checkbox
+          checked={todo.completed}
+          onCheckedChange={() => onToggle(todo.id)}
+        />
+      </div>
+      <div className="flex-1 min-w-0 flex flex-col">
         <div
           onClick={() => onToggle(todo.id)}
           className={`text-sm font-medium cursor-pointer transition-colors ${todo.completed ? 'line-through text-muted-foreground' : 'text-foreground hover:text-primary'}`}
@@ -76,9 +81,9 @@ function TodoItem({
           {todo.title}
         </div>
         {todo.description && (
-          <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed">{todo.description}</p>
+          <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed line-clamp-2">{todo.description}</p>
         )}
-        <div className="flex items-center gap-2 mt-3 flex-wrap">
+        <div className="flex items-center gap-2 mt-auto pt-3 flex-wrap">
           {priorityBadge(todo.priority)}
           {todo.due_date && (
             <span className={`text-xs font-medium px-2 py-0.5 rounded-md ${todo.due_date < today && !todo.completed ? 'bg-destructive/10 text-destructive' : 'bg-secondary text-secondary-foreground'}`}>
@@ -91,6 +96,9 @@ function TodoItem({
         </div>
       </div>
       <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-card/80 backdrop-blur-sm rounded-md p-1 shadow-sm border border-border/50">
+        <Button variant="ghost" size="icon-sm" onClick={() => onPreview(todo)} className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted">
+          <Eye className="h-3.5 w-3.5" />
+        </Button>
         <Button variant="ghost" size="icon-sm" onClick={() => onEdit(todo)} className="h-7 w-7">
           <Edit2 className="h-3.5 w-3.5" />
         </Button>
@@ -107,12 +115,13 @@ function TodoItem({
   )
 }
 
-function Section({ title, items, onToggle, onEdit, onDelete }: {
+function Section({ title, items, onToggle, onEdit, onDelete, onPreview }: {
   title: string
   items: Todo[]
   onToggle: (id: string) => void
   onEdit: (t: Todo) => void
   onDelete: (id: string) => void
+  onPreview: (t: Todo) => void
 }) {
   if (items.length === 0) return null
   return (
@@ -120,7 +129,7 @@ function Section({ title, items, onToggle, onEdit, onDelete }: {
       <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider px-1">{title} ({items.length})</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4">
         {items.map(t => (
-          <TodoItem key={t.id} todo={t} onToggle={onToggle} onEdit={onEdit} onDelete={onDelete} />
+          <TodoItem key={t.id} todo={t} onToggle={onToggle} onEdit={onEdit} onDelete={onDelete} onPreview={onPreview} />
         ))}
       </div>
     </section>
@@ -131,9 +140,11 @@ export function TodosPage() {
   const [todos, setTodos] = useState<Todo[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('pending')
-  const [viewMode, setViewMode] = useState<'list' | 'gantt'>('list')
+  const [viewMode, setViewMode] = useState<'list' | 'gantt' | 'kanban'>('list')
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [previewTodo, setPreviewTodo] = useState<Todo | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
   const [form, setForm] = useState<TodoFormData>(emptyForm)
   const [tagInput, setTagInput] = useState('')
   const [saving, setSaving] = useState(false)
@@ -220,6 +231,15 @@ export function TodosPage() {
     }
   }
 
+  const handleStatusChange = async (id: string, newStatus: 'todo' | 'in-progress' | 'done') => {
+    try {
+      await todoApi.update(id, { status: newStatus })
+      loadTodos()
+    } catch {
+      toast({ title: '更新待办状态失败', variant: 'error' })
+    }
+  }
+
   const handleDelete = async (id: string) => {
     try {
       await todoApi.delete(id)
@@ -238,10 +258,18 @@ export function TodosPage() {
     setTagInput('')
   }
 
-  const overdueItems = todos.filter(t => !t.completed && t.due_date && t.due_date < today)
-  const todayItems = todos.filter(t => !t.completed && t.due_date === today)
-  const upcomingItems = todos.filter(t => !t.completed && (!t.due_date || t.due_date > today))
-  const completedItems = todos.filter(t => t.completed)
+  const filteredTodos = todos.filter(t => {
+    if (!searchQuery) return true
+    const q = searchQuery.toLowerCase()
+    return t.title.toLowerCase().includes(q) || 
+           (t.description && t.description.toLowerCase().includes(q)) || 
+           t.tags.some(tag => tag.toLowerCase().includes(q))
+  })
+
+  const overdueItems = filteredTodos.filter(t => !t.completed && t.due_date && t.due_date < today)
+  const todayItems = filteredTodos.filter(t => !t.completed && t.due_date === today)
+  const upcomingItems = filteredTodos.filter(t => !t.completed && (!t.due_date || t.due_date > today))
+  const completedItems = filteredTodos.filter(t => t.completed)
 
   return (
     <PageLayout
@@ -249,6 +277,15 @@ export function TodosPage() {
       description={`有 ${todos.filter(t => !t.completed).length} 项任务待处理`}
       actions={
         <div className="flex items-center gap-4 flex-wrap justify-end">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="搜索待办事项..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="pl-9 w-[200px] h-9 bg-background"
+            />
+          </div>
           <div className="flex rounded-md border bg-muted p-1">
             <button
               onClick={() => setViewMode('list')}
@@ -265,6 +302,14 @@ export function TodosPage() {
               }`}
             >
               <CalendarDays className="h-4 w-4" /> 甘特图
+            </button>
+            <button
+              onClick={() => setViewMode('kanban')}
+              className={`px-3 py-1.5 flex items-center gap-1.5 text-sm font-medium transition-all rounded-sm ${
+                viewMode === 'kanban' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <List className="h-4 w-4 rotate-90" /> 看板
             </button>
           </div>
 
@@ -289,7 +334,17 @@ export function TodosPage() {
     >
       {viewMode === 'gantt' ? (
         <div className="w-full">
-          <TodoGanttChart todos={todos} onEdit={openEdit} />
+          <TodoGanttChart todos={filteredTodos} onPreview={setPreviewTodo} />
+        </div>
+      ) : viewMode === 'kanban' ? (
+        <div className="w-full h-full">
+          <TodoKanbanBoard 
+            todos={filteredTodos} 
+            onStatusChange={handleStatusChange} 
+            onEdit={openEdit} 
+            onDelete={handleDelete} 
+            onPreview={setPreviewTodo} 
+          />
         </div>
       ) : (
         <div className="w-full space-y-10">
@@ -322,20 +377,20 @@ export function TodosPage() {
 
         {!loading && filter !== 'completed' && (
           <>
-            <Section title="已逾期任务" items={overdueItems} onToggle={handleToggle} onEdit={openEdit} onDelete={handleDelete} />
-            <Section title="今天截止" items={todayItems} onToggle={handleToggle} onEdit={openEdit} onDelete={handleDelete} />
-            <Section title="计划中" items={upcomingItems} onToggle={handleToggle} onEdit={openEdit} onDelete={handleDelete} />
+            <Section title="已逾期任务" items={overdueItems} onToggle={handleToggle} onEdit={openEdit} onDelete={handleDelete} onPreview={setPreviewTodo} />
+            <Section title="今天截止" items={todayItems} onToggle={handleToggle} onEdit={openEdit} onDelete={handleDelete} onPreview={setPreviewTodo} />
+            <Section title="计划中" items={upcomingItems} onToggle={handleToggle} onEdit={openEdit} onDelete={handleDelete} onPreview={setPreviewTodo} />
           </>
         )}
 
         {!loading && filter === 'completed' && (
-          <Section title="已完成任务" items={completedItems} onToggle={handleToggle} onEdit={openEdit} onDelete={handleDelete} />
+          <Section title="已完成任务" items={completedItems} onToggle={handleToggle} onEdit={openEdit} onDelete={handleDelete} onPreview={setPreviewTodo} />
         )}
 
         {!loading && filter === 'all' && (
           <>
-            <Section title="进行中" items={todos.filter(t => !t.completed)} onToggle={handleToggle} onEdit={openEdit} onDelete={handleDelete} />
-            <Section title="已完成" items={completedItems} onToggle={handleToggle} onEdit={openEdit} onDelete={handleDelete} />
+            <Section title="进行中" items={filteredTodos.filter(t => !t.completed)} onToggle={handleToggle} onEdit={openEdit} onDelete={handleDelete} onPreview={setPreviewTodo} />
+            <Section title="已完成" items={completedItems} onToggle={handleToggle} onEdit={openEdit} onDelete={handleDelete} onPreview={setPreviewTodo} />
           </>
         )}
         </div>
@@ -343,7 +398,7 @@ export function TodosPage() {
 
       {/* Dialog for Edit/Create */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>{editingId ? '编辑待办任务' : '添加待办任务'}</DialogTitle>
           </DialogHeader>
@@ -354,11 +409,11 @@ export function TodosPage() {
               value={form.title}
               onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
             />
-            <Textarea
-              placeholder="任务详细描述（可选）"
-              value={form.description}
-              onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-              rows={3}
+            <RichEditor
+              placeholder="任务详细描述（支持 Markdown，可选）"
+              content={form.description || ''}
+              onChange={val => setForm(f => ({ ...f, description: val }))}
+              minHeight="240px"
             />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -420,6 +475,22 @@ export function TodosPage() {
               {saving ? '正在保存...' : editingId ? '保存任务' : '创建任务'}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Preview Dialog */}
+      <Dialog open={!!previewTodo} onOpenChange={(open) => !open && setPreviewTodo(null)}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl">{previewTodo?.title}</DialogTitle>
+          </DialogHeader>
+          <div className="pt-4 pb-8">
+            {previewTodo?.description ? (
+              <MarkdownViewer content={previewTodo.description} />
+            ) : (
+              <div className="text-muted-foreground text-sm italic">无详细描述</div>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </PageLayout>

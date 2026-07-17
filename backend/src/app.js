@@ -47,11 +47,11 @@ app.use((req, res, next) => {
   res.on('finish', () => {
     if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method) && 
         res.statusCode >= 200 && res.statusCode < 300 && 
-        req.path.startsWith('/api')) {
+        req.originalUrl.startsWith('/api')) {
       for (const client of sseClients) {
         try {
           if (!client.writableEnded) {
-            client.write(`data: ${JSON.stringify({ type: 'refresh', path: req.path })}\n\n`);
+            client.write(`data: ${JSON.stringify({ type: 'refresh', path: req.originalUrl })}\n\n`);
           }
         } catch (e) {
           sseClients.delete(client);
@@ -71,6 +71,7 @@ app.use('/api/journals', require('./routes/journals'));
 app.use('/api/todos', require('./routes/todos'));
 app.use('/api/calendar', require('./routes/calendar'));
 app.use('/api/stats', require('./routes/stats'));
+app.use('/api/settings', require('./routes/settings'));
 
 // Health check
 app.get('/api/health', (req, res) => {

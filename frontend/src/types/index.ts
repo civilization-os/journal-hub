@@ -14,6 +14,7 @@ export interface Todo {
   title: string
   description: string
   completed: boolean
+  status: 'todo' | 'in-progress' | 'done'
   priority: 'high' | 'medium' | 'low'
   due_date: string | null
   tags: string[]

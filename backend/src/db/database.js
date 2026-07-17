@@ -33,11 +33,33 @@ function initSchema() {
       title TEXT NOT NULL,
       description TEXT DEFAULT '',
       completed INTEGER NOT NULL DEFAULT 0,
+      status TEXT NOT NULL DEFAULT 'todo',
       priority TEXT NOT NULL DEFAULT 'medium',
       due_date TEXT DEFAULT NULL,
       tags TEXT NOT NULL DEFAULT '[]',
       sort_order INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+  `);
+
+  // Migration: Add status column if it doesn't exist
+  try {
+    const tableInfo = db.prepare("PRAGMA table_info(todos)").all();
+    if (!tableInfo.find(col => col.name === 'status')) {
+      db.exec("ALTER TABLE todos ADD COLUMN status TEXT NOT NULL DEFAULT 'todo'");
+      // Migrate completed status to the new status column
+      db.exec("UPDATE todos SET status = 'done' WHERE completed = 1");
+    }
+  } catch (err) {
+    console.error("Migration error:", err);
+  }
+
+  db.exec(`
+
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
 

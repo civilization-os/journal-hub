@@ -6,13 +6,21 @@ const { v4: uuidv4 } = require('uuid');
 // GET /api/journals - 列出所有日志
 router.get('/', (req, res) => {
   try {
-    const { date, tag, search, limit = 50, offset = 0 } = req.query;
+    const { date, start_date, end_date, tag, search, limit = 50, offset = 0 } = req.query;
     let query = 'SELECT * FROM journals WHERE 1=1';
     const params = [];
 
     if (date) {
       query += ' AND date = ?';
       params.push(date);
+    }
+    if (start_date) {
+      query += ' AND date >= ?';
+      params.push(start_date);
+    }
+    if (end_date) {
+      query += ' AND date <= ?';
+      params.push(end_date);
     }
     if (tag) {
       query += ' AND tags LIKE ?';
