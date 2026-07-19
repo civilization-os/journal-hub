@@ -209,6 +209,34 @@ const TOOLS = [
     },
   },
   {
+    name: 'calendar_event_update',
+    description: 'Update a calendar event.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', description: 'Event ID' },
+        title: { type: 'string' },
+        description: { type: 'string' },
+        start_date: { type: 'string' },
+        end_date: { type: 'string' },
+        all_day: { type: 'boolean' },
+        color: { type: 'string' },
+      },
+      required: ['id'],
+    },
+  },
+  {
+    name: 'calendar_event_delete',
+    description: 'Delete a calendar event.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', description: 'Event ID' },
+      },
+      required: ['id'],
+    },
+  },
+  {
     name: 'calendar_get_day',
     description: 'Get all content for a specific day: journals, todos, and calendar events.',
     inputSchema: {
@@ -336,6 +364,15 @@ async function handleTool(name, args) {
     }
     case 'calendar_event_create': {
       const res = await api.post('/calendar', args);
+      return JSON.stringify(res.data, null, 2);
+    }
+    case 'calendar_event_update': {
+      const { id, ...body } = args;
+      const res = await api.put(`/calendar/${id}`, body);
+      return JSON.stringify(res.data, null, 2);
+    }
+    case 'calendar_event_delete': {
+      const res = await api.delete(`/calendar/${args.id}`);
       return JSON.stringify(res.data, null, 2);
     }
     case 'calendar_get_day': {

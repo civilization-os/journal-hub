@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { useToast } from '@/components/ui/toaster'
-import { ChevronLeft, ChevronRight, Plus, BookOpen, CheckSquare, X, Calendar as CalendarIcon, Clock } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, BookOpen, CheckSquare, X, Calendar as CalendarIcon, Clock, List, Search, Edit2, Trash2 } from 'lucide-react'
 import { cn, todayStr } from '@/lib/utils'
 
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六']
@@ -33,6 +33,10 @@ export function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState<string | null>(todayStr())
   const [dayData, setDayData] = useState<DayData | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [allEvents, setAllEvents] = useState<CalendarEvent[]>([])
+  const [editingEventId, setEditingEventId] = useState<string | null>(null)
   const [form, setForm] = useState<EventForm>({
     title: '',
     start_date: todayStr(),
@@ -53,6 +57,21 @@ export function CalendarPage() {
       toast({ title: '加载日程事件失败', variant: 'error' })
     }
   }, [currentMonth, toast])
+
+  const loadAllEvents = useCallback(async () => {
+    try {
+      const r = await calendarApi.list({ limit: 1000 })
+      setAllEvents(r.data.events)
+    } catch {
+      toast({ title: '加载日程列表失败', variant: 'error' })
+    }
+  }, [toast])
+
+  useEffect(() => {
+    if (viewMode === 'list') {
+      loadAllEvents()
+    }
+  }, [viewMode, loadAllEvents])
 
   const loadDayData = useCallback(() => {
     if (!selectedDate) return
@@ -101,12 +120,25 @@ export function CalendarPage() {
   }
 
   const openNewEvent = (date?: string) => {
+    setEditingEventId(null)
     setForm({
       title: '',
       start_date: date || selectedDate || todayStr(),
       end_date: '',
       color: 'default',
       description: '',
+    })
+    setDialogOpen(true)
+  }
+
+  const openEditEvent = (ev: CalendarEvent) => {
+    setEditingEventId(ev.id)
+    setForm({
+      title: ev.title,
+      start_date: ev.start_date,
+      end_date: ev.end_date || '',
+      color: ev.color || 'default',
+      description: ev.description || '',
     })
     setDialogOpen(true)
   }
@@ -118,15 +150,21 @@ export function CalendarPage() {
     }
     setSaving(true)
     try {
-      await calendarApi.create({ ...form, end_date: form.end_date || null, all_day: true })
-      toast({ title: '事件创建成功', variant: 'success' })
+      if (editingEventId) {
+        await calendarApi.update(editingEventId, { ...form, end_date: form.end_date || null, all_day: true })
+        toast({ title: '事件更新成功', variant: 'success' })
+      } else {
+        await calendarApi.create({ ...form, end_date: form.end_date || null, all_day: true })
+        toast({ title: '事件创建成功', variant: 'success' })
+      }
       setDialogOpen(false)
       loadEvents()
+      if (viewMode === 'list') loadAllEvents()
       if (selectedDate) {
         calendarApi.getDay(selectedDate).then(r => setDayData(r.data))
       }
     } catch {
-      toast({ title: '创建事件失败', variant: 'error' })
+      toast({ title: '保存事件失败', variant: 'error' })
     } finally {
       setSaving(false)
     }
@@ -137,6 +175,7 @@ export function CalendarPage() {
       await calendarApi.delete(id)
       toast({ title: '事件已删除', variant: 'success' })
       loadEvents()
+      if (viewMode === 'list') loadAllEvents()
       if (selectedDate) {
         calendarApi.getDay(selectedDate).then(r => setDayData(r.data))
       }
@@ -152,15 +191,53 @@ export function CalendarPage() {
       title="日历视图"
       description="管理您的日程、追踪日志与待办事项"
       actions={
-        <Button size="sm" onClick={() => openNewEvent()} className="rounded-full shadow-sm hover:shadow-md transition-all">
-          <Plus className="h-4 w-4 mr-1" /> 新建日程
-        </Button>
+        <div className="flex items-center gap-4 flex-wrap justify-end">
+          {viewMode === 'list' && (
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="搜索日程..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="pl-9 w-[200px] h-9 bg-background"
+              />
+            </div>
+          )}
+          <div className="flex rounded-md border bg-muted p-1">
+            <button
+              onClick={() => setViewMode('calendar')}
+              className={cn("px-3 py-1.5 flex items-center gap-1.5 text-sm font-medium transition-all rounded-sm", viewMode === 'calendar' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground')}
+            >
+              <CalendarIcon className="h-4 w-4" /> 日历
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={cn("px-3 py-1.5 flex items-center gap-1.5 text-sm font-medium transition-all rounded-sm", viewMode === 'list' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground')}
+            >
+              <List className="h-4 w-4" /> 列表
+            </button>
+          </div>
+          <Button size="sm" onClick={() => openNewEvent()} className="rounded-full shadow-sm hover:shadow-md transition-all">
+            <Plus className="h-4 w-4 mr-1" /> 新建日程
+          </Button>
+        </div>
       }
     >
       <div className="flex-1 flex flex-col xl:flex-row gap-6 w-full min-h-[600px] pb-6">
         
-        {/* Main Calendar Grid Area */}
-        <div className="flex-1 flex flex-col min-w-0 bg-card border rounded-3xl shadow-sm overflow-hidden p-6">
+        {viewMode === 'list' ? (
+          <div className="w-full">
+            <EventListView 
+              events={allEvents} 
+              searchQuery={searchQuery} 
+              onEdit={openEditEvent} 
+              onDelete={handleDeleteEvent} 
+            />
+          </div>
+        ) : (
+          <>
+            {/* Main Calendar Grid Area */}
+            <div className="flex-1 flex flex-col min-w-0 bg-card border rounded-3xl shadow-sm overflow-hidden p-6">
           {/* Calendar Header */}
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
@@ -343,12 +420,20 @@ export function CalendarPage() {
                           )}
                         >
                           <span className="truncate">{ev.title}</span>
-                          <button
-                            onClick={() => handleDeleteEvent(ev.id)}
-                            className="opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-muted-foreground hover:text-destructive shrink-0 bg-background/50 backdrop-blur rounded-full p-1"
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 shrink-0 bg-background/50 backdrop-blur rounded-full p-1 border">
+                            <button
+                              onClick={() => openEditEvent(ev)}
+                              className="cursor-pointer text-muted-foreground hover:text-primary p-1"
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteEvent(ev.id)}
+                              className="cursor-pointer text-muted-foreground hover:text-destructive p-1"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
                         </div>
                       )})
                     ) : (
@@ -427,6 +512,8 @@ export function CalendarPage() {
           )}
           </div>
         </div>
+        </>
+        )}
       </div>
 
       {/* Create Event Dialog */}
@@ -492,5 +579,71 @@ export function CalendarPage() {
         </DialogContent>
       </Dialog>
     </PageLayout>
+  )
+}
+
+function EventListView({ events, searchQuery, onEdit, onDelete }: { events: CalendarEvent[], searchQuery: string, onEdit: (ev: CalendarEvent) => void, onDelete: (id: string) => void }) {
+  const today = todayStr()
+  const filtered = events.filter(e => !searchQuery || e.title.toLowerCase().includes(searchQuery.toLowerCase()) || (e.description && e.description.toLowerCase().includes(searchQuery.toLowerCase())))
+
+  const overdue = filtered.filter(e => e.start_date < today)
+  const todayEvents = filtered.filter(e => e.start_date === today)
+  const upcoming = filtered.filter(e => e.start_date > today)
+
+  const renderSection = (title: string, list: CalendarEvent[]) => {
+    if (list.length === 0) return null
+    return (
+      <section className="space-y-4">
+        <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider px-1">{title} ({list.length})</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4">
+          {list.map(ev => {
+            const eventBg = ev.color === 'red' ? 'border-l-rose-500' :
+                            ev.color === 'green' ? 'border-l-emerald-500' :
+                            ev.color === 'blue' ? 'border-l-blue-500' :
+                            ev.color === 'yellow' ? 'border-l-amber-500' : 'border-l-zinc-500'
+            return (
+              <div key={ev.id} className={`group flex flex-col rounded-xl px-5 py-5 border bg-card shadow-sm hover:shadow-md transition-all duration-300 border-l-4 ${eventBg} relative min-h-[120px]`}>
+                <div className="flex-1">
+                  <div className="text-base font-bold text-foreground pr-12">{ev.title}</div>
+                  {ev.description && <p className="text-sm text-muted-foreground mt-2 line-clamp-2 leading-relaxed">{ev.description}</p>}
+                </div>
+                <div className="flex items-center gap-2 mt-4 pt-3 border-t border-border/50">
+                  <span className="text-xs font-medium px-2 py-1 bg-secondary text-secondary-foreground rounded-md">
+                    {ev.start_date === today ? '今天' : ev.start_date}
+                    {ev.end_date ? ` 至 ${ev.end_date}` : ''}
+                  </span>
+                </div>
+                <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-card/90 backdrop-blur-sm rounded-md p-1 shadow-sm border border-border/50">
+                  <Button variant="ghost" size="icon-sm" onClick={() => onEdit(ev)} className="h-7 w-7 text-muted-foreground hover:text-foreground">
+                    <Edit2 className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button variant="ghost" size="icon-sm" className="text-destructive hover:bg-destructive/10 hover:text-destructive h-7 w-7" onClick={() => onDelete(ev.id)}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </section>
+    )
+  }
+
+  if (filtered.length === 0) {
+    return (
+      <div className="text-center py-20 border border-dashed rounded-2xl bg-muted/10 shadow-sm mt-8">
+        <p className="text-sm font-medium text-muted-foreground">
+          没有找到任何日程
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-10 mt-2">
+      {renderSection('过往日程', overdue)}
+      {renderSection('今日日程', todayEvents)}
+      {renderSection('即将到来', upcoming)}
+    </div>
   )
 }
