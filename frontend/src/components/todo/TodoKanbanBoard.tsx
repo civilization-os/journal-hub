@@ -90,6 +90,18 @@ function KanbanItem({
           </span>
         )}
       </div>
+      <div className="space-y-1">
+        <div className="flex items-center justify-between text-[10px] font-medium text-muted-foreground">
+          <span>进度</span>
+          <span>{todo.progress ?? 0}%</span>
+        </div>
+        <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+          <div
+            className={todo.status === 'done' ? 'h-full rounded-full bg-emerald-500' : 'h-full rounded-full bg-blue-500'}
+            style={{ width: `${todo.progress ?? 0}%` }}
+          />
+        </div>
+      </div>
     </div>
   )
 }

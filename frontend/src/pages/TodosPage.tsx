@@ -27,6 +27,7 @@ interface TodoFormData {
   title: string
   description: string
   priority: Priority
+  progress: number
   due_date: string
   tags: string[]
 }
@@ -35,6 +36,7 @@ const emptyForm: TodoFormData = {
   title: '',
   description: '',
   priority: 'medium',
+  progress: 0,
   due_date: '',
   tags: [],
 }
@@ -83,6 +85,21 @@ function TodoItem({
         {todo.description && (
           <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed line-clamp-2">{todo.description}</p>
         )}
+        <div className="mt-3 space-y-1.5">
+          <div className="flex items-center justify-between text-xs font-medium text-muted-foreground">
+            <span>进度</span>
+            <span>{todo.progress ?? 0}%</span>
+          </div>
+          <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+            <div
+              className={cn(
+                "h-full rounded-full transition-all",
+                todo.completed ? "bg-emerald-500" : todo.progress > 0 ? "bg-blue-500" : "bg-muted-foreground/30"
+              )}
+              style={{ width: `${todo.progress ?? 0}%` }}
+            />
+          </div>
+        </div>
         <div className="flex items-center gap-2 mt-auto pt-3 flex-wrap">
           {priorityBadge(todo.priority)}
           {todo.due_date && (
@@ -191,6 +208,7 @@ export function TodosPage() {
       title: t.title,
       description: t.description || '',
       priority: t.priority,
+      progress: t.progress ?? 0,
       due_date: t.due_date || '',
       tags: t.tags || [],
     })
@@ -205,7 +223,7 @@ export function TodosPage() {
     }
     setSaving(true)
     try {
-      const payload = { ...form, due_date: form.due_date || null }
+      const payload = { ...form, progress: Math.min(100, Math.max(0, Math.round(form.progress))), due_date: form.due_date || null }
       if (editingId) {
         await todoApi.update(editingId, payload)
         toast({ title: '待办任务已更新', variant: 'success' })
@@ -439,6 +457,32 @@ export function TodosPage() {
               </div>
             </div>
 
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block">任务进度</label>
+                <span className="text-sm font-semibold text-foreground">{form.progress}%</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <Input
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="5"
+                  value={form.progress}
+                  onChange={e => setForm(f => ({ ...f, progress: Number(e.target.value) }))}
+                  className="flex-1"
+                />
+                <Input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={form.progress}
+                  onChange={e => setForm(f => ({ ...f, progress: Number(e.target.value) }))}
+                  className="w-24"
+                />
+              </div>
+            </div>
+
             {/* Tags */}
             <div>
               <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 block">任务标签</label>
@@ -485,6 +529,15 @@ export function TodosPage() {
             <DialogTitle className="text-xl">{previewTodo?.title}</DialogTitle>
           </DialogHeader>
           <div className="pt-4 pb-8">
+            <div className="mb-5 space-y-1.5">
+              <div className="flex items-center justify-between text-xs font-medium text-muted-foreground">
+                <span>任务进度</span>
+                <span>{previewTodo?.progress ?? 0}%</span>
+              </div>
+              <div className="h-2 rounded-full bg-muted overflow-hidden">
+                <div className="h-full rounded-full bg-blue-500" style={{ width: `${previewTodo?.progress ?? 0}%` }} />
+              </div>
+            </div>
             {previewTodo?.description ? (
               <MarkdownViewer content={previewTodo.description} />
             ) : (

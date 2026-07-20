@@ -108,10 +108,15 @@ export function TodoGanttChart({ todos, onPreview }: { todos: Todo[], onPreview:
               const barWidth = Math.max(width - 12, 24)
               const isShort = barWidth < 100
 
-              const barColor = t.completed ? 'bg-zinc-500/10 border-zinc-500/20' : 
-                            t.priority === 'high' ? 'bg-rose-500 shadow-sm shadow-rose-500/30 border-rose-600' : 
-                            t.priority === 'medium' ? 'bg-amber-500 shadow-sm shadow-amber-500/30 border-amber-600' : 
-                            'bg-blue-500 shadow-sm shadow-blue-500/30 border-blue-600'
+              const barTrackColor = t.completed ? 'bg-zinc-500/10 border-zinc-500/20' : 
+                            t.priority === 'high' ? 'bg-rose-500/10 border-rose-500/30' : 
+                            t.priority === 'medium' ? 'bg-amber-500/10 border-amber-500/30' : 
+                            'bg-blue-500/10 border-blue-500/30'
+
+              const barProgressColor = t.completed ? 'bg-emerald-500' :
+                            t.priority === 'high' ? 'bg-rose-500' : 
+                            t.priority === 'medium' ? 'bg-amber-500' : 
+                            'bg-blue-500'
 
               const textColorOutside = t.completed ? 'text-zinc-500 line-through opacity-60' :
                             t.priority === 'high' ? 'text-rose-600 dark:text-rose-400' : 
@@ -134,7 +139,15 @@ export function TodoGanttChart({ todos, onPreview }: { todos: Todo[], onPreview:
                     onClick={() => onPreview(t)}
                   >
                     {/* Colored Box */}
-                    <div className={cn("h-full rounded-lg border", barColor)} style={{ width: `${barWidth}px` }} />
+                    <div className={cn("h-full rounded-lg border overflow-hidden relative shadow-sm", barTrackColor)} style={{ width: `${barWidth}px` }}>
+                      <div
+                        className={cn("h-full rounded-md transition-all", barProgressColor)}
+                        style={{ width: `${t.progress ?? 0}%` }}
+                      />
+                      <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-foreground/80">
+                        {t.progress ?? 0}%
+                      </span>
+                    </div>
                     
                     {/* Text */}
                     {isShort ? (

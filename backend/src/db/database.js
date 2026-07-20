@@ -35,6 +35,7 @@ function initSchema() {
       completed INTEGER NOT NULL DEFAULT 0,
       status TEXT NOT NULL DEFAULT 'todo',
       priority TEXT NOT NULL DEFAULT 'medium',
+      progress INTEGER NOT NULL DEFAULT 0,
       due_date TEXT DEFAULT NULL,
       tags TEXT NOT NULL DEFAULT '[]',
       sort_order INTEGER NOT NULL DEFAULT 0,
@@ -50,6 +51,10 @@ function initSchema() {
       db.exec("ALTER TABLE todos ADD COLUMN status TEXT NOT NULL DEFAULT 'todo'");
       // Migrate completed status to the new status column
       db.exec("UPDATE todos SET status = 'done' WHERE completed = 1");
+    }
+    if (!tableInfo.find(col => col.name === 'progress')) {
+      db.exec("ALTER TABLE todos ADD COLUMN progress INTEGER NOT NULL DEFAULT 0");
+      db.exec("UPDATE todos SET progress = 100 WHERE completed = 1");
     }
   } catch (err) {
     console.error("Migration error:", err);

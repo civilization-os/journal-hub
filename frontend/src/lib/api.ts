@@ -27,6 +27,11 @@ async function put<T>(url: string, data: Record<string, unknown>) {
   return r.data
 }
 
+async function patch<T>(url: string, data: Record<string, unknown>) {
+  const r = await api.patch<ApiResponse<T>>(url, data)
+  return r.data
+}
+
 async function del<T>(url: string) {
   const r = await api.delete<ApiResponse<T>>(url)
   return r.data
@@ -48,7 +53,7 @@ export const todoApi = {
   get: (id: string) => get<Todo>(`/todos/${id}`),
   create: (data: Record<string, unknown>) => post<Todo>('/todos', data),
   update: (id: string, data: Record<string, unknown>) => put<Todo>(`/todos/${id}`, data),
-  complete: (id: string) => post<Todo>(`/todos/${id}/complete`, {}),
+  complete: (id: string) => patch<Todo>(`/todos/${id}/complete`, {}),
   delete: (id: string) => del<void>(`/todos/${id}`),
 }
 

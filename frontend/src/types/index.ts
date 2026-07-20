@@ -16,6 +16,7 @@ export interface Todo {
   completed: boolean
   status: 'todo' | 'in-progress' | 'done'
   priority: 'high' | 'medium' | 'low'
+  progress: number
   due_date: string | null
   tags: string[]
   sort_order: number

@@ -55,11 +55,18 @@ export function DashboardPage() {
   })
 
   const headerTitle = (
-    <div className="flex items-center gap-3">
-      <Calendar className="h-6 w-6 text-primary" />
-      <span>{formattedToday}</span>
-      <div className="flex items-center gap-1.5 ml-3 px-3 py-1 bg-secondary/80 text-secondary-foreground rounded-lg font-mono text-base border">
-        <Clock className="h-4 w-4" />
+    <div className="flex flex-wrap items-center gap-3">
+      <div className="flex items-center gap-3 rounded-2xl border bg-card px-4 py-2 shadow-sm">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+          <Calendar className="h-5 w-5" />
+        </div>
+        <div>
+          <div className="text-xl font-black tracking-tight">{formattedToday}</div>
+          <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Journal Hub 工作台</div>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 rounded-2xl border bg-muted/40 px-4 py-3 font-mono text-sm font-bold text-foreground shadow-sm">
+        <Clock className="h-4 w-4 text-muted-foreground" />
         {formattedTime}
       </div>
     </div>
@@ -69,20 +76,39 @@ export function DashboardPage() {
     <PageLayout title={headerTitle}>
       <div className="space-y-8 w-full">
         {/* Welcome Hero Area */}
-        <Card className="relative overflow-hidden bg-primary text-primary-foreground border-none shadow-md">
-          <CardContent className="p-8 md:p-10 relative z-10 flex flex-col gap-8 w-full">
+        <Card className="relative overflow-hidden border shadow-sm bg-card">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(250,204,21,0.18),transparent_28%),radial-gradient(circle_at_top_right,rgba(59,130,246,0.10),transparent_34%)]" />
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-yellow-400 via-blue-500 to-emerald-500" />
+          <CardContent className="p-6 md:p-8 relative z-10 flex flex-col gap-8 w-full">
             <div className="space-y-4 w-full">
               {suggestion ? (
                 <>
-                  <h1 className="text-2xl sm:text-3xl font-black tracking-tight flex items-center gap-2">
-                    <Sparkles className="h-6 w-6 text-yellow-300" />
-                    AI 今日建议
-                  </h1>
-                  <div className="bg-primary-foreground/10 p-4 rounded-xl border border-primary-foreground/20 shadow-inner overflow-hidden">
+                  <div className="flex items-center justify-between gap-4 flex-wrap">
+                    <h1 className="text-2xl sm:text-3xl font-black tracking-tight flex items-center gap-3">
+                      <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-yellow-400/15 text-yellow-600 dark:text-yellow-300 border border-yellow-400/20">
+                        <Sparkles className="h-6 w-6" />
+                      </span>
+                      AI 今日建议
+                    </h1>
+                    <Badge variant="secondary" className="rounded-full px-3 py-1 font-bold">由 MCP 数据生成</Badge>
+                  </div>
+                  <div className="rounded-2xl border bg-muted/25 p-5 shadow-inner overflow-hidden">
                     <MarkdownViewer 
                       content={suggestion} 
-                      className="text-primary-foreground/90 max-w-none prose-p:text-primary-foreground/90 prose-headings:text-primary-foreground prose-strong:text-primary-foreground prose-a:text-primary-foreground hover:prose-a:text-primary-foreground/80 prose-code:text-primary-foreground prose-li:text-primary-foreground/90 prose-blockquote:text-primary-foreground/70 prose-blockquote:border-primary-foreground/30 !prose-sm"
+                      className="max-w-none prose-p:text-foreground/85 prose-headings:text-foreground prose-strong:text-foreground prose-a:text-foreground hover:prose-a:text-foreground/80 prose-code:text-foreground prose-li:text-foreground/85 prose-blockquote:text-muted-foreground prose-blockquote:border-primary/30 !prose-sm"
                     />
+                  </div>
+                  <div className="flex flex-wrap gap-3 pt-1">
+                    <Link to="/todos">
+                      <Button variant="secondary" size="sm" className="rounded-full font-bold">
+                        查看待办 <ArrowRight className="h-4 w-4 ml-1" />
+                      </Button>
+                    </Link>
+                    <Link to="/calendar">
+                      <Button variant="outline" size="sm" className="rounded-full font-bold">
+                        打开日历
+                      </Button>
+                    </Link>
                   </div>
                 </>
               ) : (
@@ -90,8 +116,8 @@ export function DashboardPage() {
                   <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
                     你好，今天也是值得记录的一天。
                   </h1>
-                  <p className="text-base text-primary-foreground/80 max-w-xl leading-relaxed font-medium">
-                    Journal Hub 已经为您准备就绪。您今天有 <strong className="text-primary-foreground font-bold text-lg">{loading ? '...' : stats?.todos.pending || 0}</strong> 项待办任务需要跟进，目前已记录了 <strong className="text-primary-foreground font-bold text-lg">{loading ? '...' : stats?.journals.total || 0}</strong> 篇日记。
+                  <p className="text-base text-muted-foreground max-w-xl leading-relaxed font-medium">
+                    Journal Hub 已经为您准备就绪。您今天有 <strong className="text-foreground font-bold text-lg">{loading ? '...' : stats?.todos.pending || 0}</strong> 项待办任务需要跟进，目前已记录了 <strong className="text-foreground font-bold text-lg">{loading ? '...' : stats?.journals.total || 0}</strong> 篇日记。
                   </p>
                 </>
               )}

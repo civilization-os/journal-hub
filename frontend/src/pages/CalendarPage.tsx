@@ -26,6 +26,15 @@ interface EventForm {
   description: string
 }
 
+interface CalendarDayItem {
+  id: string
+  type: 'event' | 'journal' | 'todo'
+  title: string
+  color: string
+  completed: boolean
+  progress?: number
+}
+
 export function CalendarPage() {
   const navigate = useNavigate()
   const [currentMonth, setCurrentMonth] = useState(new Date())
@@ -109,9 +118,9 @@ export function CalendarPage() {
   })
 
   const getItemsForDay = useCallback((dateStr: string) => {
-     const dayEvents = monthData.events.filter(e => e.start_date === dateStr).map(e => ({ id: e.id, type: 'event', title: e.title, color: e.color, completed: false }));
-     const dayJournals = monthData.journals.filter(j => j.date === dateStr).map(j => ({ id: j.id, type: 'journal', title: j.title || '无标题日志', color: 'emerald', completed: false }));
-     const dayTodos = monthData.todos.filter(t => t.due_date === dateStr).map(t => ({ id: t.id, type: 'todo', title: t.title, color: 'blue', completed: t.completed }));
+     const dayEvents: CalendarDayItem[] = monthData.events.filter(e => e.start_date === dateStr).map(e => ({ id: e.id, type: 'event', title: e.title, color: e.color, completed: false }));
+     const dayJournals: CalendarDayItem[] = monthData.journals.filter(j => j.date === dateStr).map(j => ({ id: j.id, type: 'journal', title: j.title || '无标题日志', color: 'emerald', completed: false }));
+     const dayTodos: CalendarDayItem[] = monthData.todos.filter(t => t.due_date === dateStr).map(t => ({ id: t.id, type: 'todo', title: t.title, color: 'blue', completed: t.completed, progress: t.progress ?? 0 }));
      return [...dayEvents, ...dayJournals, ...dayTodos];
   }, [monthData])
 
@@ -185,6 +194,12 @@ export function CalendarPage() {
   }
 
   const today = todayStr()
+  const monthStats = {
+    events: monthData.events.length,
+    journals: monthData.journals.length,
+    todos: monthData.todos.length,
+    overdueTodos: monthData.todos.filter(t => !t.completed && t.due_date && t.due_date < today).length,
+  }
 
   return (
     <PageLayout
@@ -223,7 +238,7 @@ export function CalendarPage() {
         </div>
       }
     >
-      <div className="flex-1 flex flex-col xl:flex-row gap-6 w-full min-h-[600px] pb-6">
+      <div className="flex-1 flex flex-col xl:flex-row gap-6 w-full min-h-[600px] pb-6 relative">
         
         {viewMode === 'list' ? (
           <div className="w-full">
@@ -237,13 +252,22 @@ export function CalendarPage() {
         ) : (
           <>
             {/* Main Calendar Grid Area */}
-            <div className="flex-1 flex flex-col min-w-0 bg-card border rounded-3xl shadow-sm overflow-hidden p-6">
+            <div className="flex-1 flex flex-col min-w-0 bg-card border rounded-3xl shadow-sm overflow-hidden p-6 relative">
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.12),transparent_35%),radial-gradient(circle_at_top_right,rgba(16,185,129,0.10),transparent_30%)]" />
           {/* Calendar Header */}
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
-              <CalendarIcon className="h-5 w-5 text-primary" />
-              {format(currentMonth, 'yyyy年 M月', { locale: zhCN })}
-            </h2>
+          <div className="flex items-start justify-between mb-6 relative z-10 gap-4 flex-wrap">
+            <div>
+              <h2 className="text-2xl font-black tracking-tight text-foreground flex items-center gap-2">
+                <CalendarIcon className="h-6 w-6 text-primary" />
+                {format(currentMonth, 'yyyy年 M月', { locale: zhCN })}
+              </h2>
+              <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <MonthStat label="日程" value={monthStats.events} tone="blue" />
+                <MonthStat label="日志" value={monthStats.journals} tone="emerald" />
+                <MonthStat label="待办" value={monthStats.todos} tone="amber" />
+                <MonthStat label="逾期" value={monthStats.overdueTodos} tone="rose" />
+              </div>
+            </div>
             <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-xl">
               <Button variant="ghost" size="icon-sm" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} className="rounded-lg hover:bg-background shadow-sm">
                 <ChevronLeft className="h-4 w-4" />
@@ -263,7 +287,7 @@ export function CalendarPage() {
           </div>
 
           {/* Weekdays */}
-          <div className="grid grid-cols-7 mb-2">
+          <div className="grid grid-cols-7 mb-2 relative z-10">
             {WEEKDAYS.map((d, i) => (
               <div key={d} className={cn(
                 "text-center text-xs font-bold uppercase tracking-wider py-2 text-muted-foreground",
@@ -274,12 +298,15 @@ export function CalendarPage() {
             ))}
           </div>
 
+          <CalendarLegend />
+
           {/* Grid Layout */}
-          <div className="grid grid-cols-7 flex-1 gap-px bg-border/50 border rounded-2xl overflow-hidden">
+          <div className="grid grid-cols-7 flex-1 gap-px bg-border/60 border rounded-2xl overflow-hidden relative z-10 shadow-inner">
             {/* Days spanning the full calendar weeks */}
             {days.map(day => {
               const dateStr = format(day, 'yyyy-MM-dd')
               const dayItems = getItemsForDay(dateStr)
+              const density = Math.min(dayItems.length, 4)
               const isToday = dateStr === today
               const isSelected = dateStr === selectedDate
               const isCurrentMonth = isSameMonth(day, currentMonth)
@@ -302,12 +329,29 @@ export function CalendarPage() {
                   key={dateStr}
                   onClick={() => handleDayClick(dateStr)}
                   className={cn(
-                    'bg-card min-h-[100px] p-2 cursor-pointer transition-all duration-300 flex flex-col hover:bg-muted/30 group relative',
-                    isToday && 'bg-blue-500/5 ring-2 ring-inset ring-blue-500/60 z-20 shadow-[0_0_15px_rgba(59,130,246,0.3)]',
-                    isSelected && !isToday && 'bg-primary/5 ring-1 ring-inset ring-primary/20 z-10',
-                    !isCurrentMonth && 'opacity-40 bg-muted/5'
+                    'bg-card min-h-[112px] p-2.5 cursor-pointer transition-all duration-300 flex flex-col hover:bg-muted/40 group relative overflow-hidden',
+                    density === 1 && 'bg-gradient-to-br from-blue-500/[0.035] to-transparent',
+                    density === 2 && 'bg-gradient-to-br from-blue-500/[0.06] to-emerald-500/[0.035]',
+                    density === 3 && 'bg-gradient-to-br from-blue-500/[0.08] via-emerald-500/[0.045] to-amber-500/[0.04]',
+                    density >= 4 && 'bg-gradient-to-br from-blue-500/[0.10] via-emerald-500/[0.06] to-rose-500/[0.05]',
+                    isToday && 'bg-blue-500/5 ring-2 ring-inset ring-blue-500/70 z-20 shadow-[0_0_22px_rgba(59,130,246,0.22)]',
+                    isSelected && !isToday && 'bg-primary/5 ring-2 ring-inset ring-primary/25 z-10',
+                    !isCurrentMonth && 'opacity-45 bg-muted/10'
                   )}
                 >
+                  {dayItems.length > 0 && (
+                    <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-blue-500 via-emerald-500 to-amber-500 opacity-80" />
+                  )}
+                  <button
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      openNewEvent(dateStr)
+                    }}
+                    className="absolute bottom-2 right-2 h-6 w-6 rounded-full border bg-background/90 text-muted-foreground opacity-0 shadow-sm backdrop-blur transition-all hover:text-foreground group-hover:opacity-100"
+                    aria-label={`${dateStr} 新建日程`}
+                  >
+                    <Plus className="mx-auto h-3.5 w-3.5" />
+                  </button>
                   <div className="flex justify-between items-start mb-2">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span className={cn(
@@ -363,6 +407,9 @@ export function CalendarPage() {
                         >
                           {icon}
                           <span className="truncate">{item.title}</span>
+                          {item.type === 'todo' && !item.completed && (
+                            <span className="ml-auto shrink-0 tabular-nums opacity-70">{item.progress}%</span>
+                          )}
                         </div>
                       )
                     })}
@@ -372,6 +419,21 @@ export function CalendarPage() {
                       </div>
                     )}
                   </div>
+                  {dayItems.length > 0 && (
+                    <div className="mt-2 flex items-center gap-1">
+                      {dayItems.slice(0, 6).map(item => (
+                        <span
+                          key={`${item.type}-dot-${item.id}`}
+                          className={cn(
+                            "h-1.5 w-1.5 rounded-full",
+                            item.type === 'event' && "bg-blue-500",
+                            item.type === 'journal' && "bg-emerald-500",
+                            item.type === 'todo' && (item.completed ? "bg-zinc-400" : "bg-amber-500")
+                          )}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
               )
             })}
@@ -382,10 +444,11 @@ export function CalendarPage() {
         <div className="w-full xl:w-80 shrink-0 relative">
           <div className="flex flex-col gap-4 xl:absolute xl:inset-0 h-full">
           {selectedDate ? (
-            <div className="bg-card border rounded-3xl p-6 shadow-sm flex-1 overflow-y-auto scrollbar-thin">
-              <div className="flex items-center justify-between border-b border-border/50 pb-5 mb-5">
+            <div className="bg-card border rounded-3xl p-6 shadow-sm flex-1 overflow-y-auto scrollbar-thin relative overflow-hidden">
+              <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-br from-primary/8 via-transparent to-transparent" />
+              <div className="flex items-center justify-between border-b border-border/50 pb-5 mb-5 relative z-10">
                 <div>
-                  <h3 className="text-xl font-bold text-foreground">
+                  <h3 className="text-3xl font-black text-foreground leading-none">
                     {format(parseISO(selectedDate), 'd日', { locale: zhCN })}
                   </h3>
                   <p className="text-sm font-medium text-muted-foreground">
@@ -397,7 +460,13 @@ export function CalendarPage() {
                 </Button>
               </div>
 
-              <div className="space-y-8">
+              <div className="grid grid-cols-3 gap-2 mb-6 relative z-10">
+                <DayStat label="日程" value={dayData?.events.length ?? 0} />
+                <DayStat label="日志" value={dayData?.journals.length ?? 0} />
+                <DayStat label="待办" value={dayData?.todos.length ?? 0} />
+              </div>
+
+              <div className="space-y-8 relative z-10">
                 {/* Events Section */}
                 <section>
                   <div className="flex items-center gap-2 mb-3">
@@ -419,7 +488,12 @@ export function CalendarPage() {
                             eventBg
                           )}
                         >
-                          <span className="truncate">{ev.title}</span>
+                          <div className="min-w-0">
+                            <div className="truncate">{ev.title}</div>
+                            {ev.description && (
+                              <p className="mt-1 line-clamp-2 text-xs font-medium opacity-70">{ev.description}</p>
+                            )}
+                          </div>
                           <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 shrink-0 bg-background/50 backdrop-blur rounded-full p-1 border">
                             <button
                               onClick={() => openEditEvent(ev)}
@@ -492,7 +566,18 @@ export function CalendarPage() {
                             'h-5 w-5 shrink-0 transition-colors',
                             t.completed ? 'text-primary' : 'text-muted-foreground'
                           )} />
-                          <span className={cn('text-sm font-bold truncate', t.completed ? 'line-through text-muted-foreground' : 'text-foreground')}>{t.title}</span>
+                          <div className="min-w-0 flex-1 space-y-2">
+                            <div className="flex items-center justify-between gap-3">
+                              <span className={cn('text-sm font-bold truncate', t.completed ? 'line-through text-muted-foreground' : 'text-foreground')}>{t.title}</span>
+                              <span className="text-xs font-bold text-muted-foreground tabular-nums">{t.progress ?? 0}%</span>
+                            </div>
+                            <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                              <div
+                                className={cn("h-full rounded-full", t.completed ? "bg-emerald-500" : "bg-blue-500")}
+                                style={{ width: `${t.progress ?? 0}%` }}
+                              />
+                            </div>
+                          </div>
                         </div>
                       ))
                     ) : (
@@ -579,6 +664,54 @@ export function CalendarPage() {
         </DialogContent>
       </Dialog>
     </PageLayout>
+  )
+}
+
+function MonthStat({ label, value, tone }: { label: string; value: number; tone: 'blue' | 'emerald' | 'amber' | 'rose' }) {
+  const toneClass = {
+    blue: 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20',
+    emerald: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20',
+    amber: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20',
+    rose: 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/20',
+  }[tone]
+
+  return (
+    <div className={cn("rounded-xl border px-3 py-2 shadow-sm backdrop-blur-sm", toneClass)}>
+      <div className="text-[10px] font-bold uppercase tracking-widest opacity-70">{label}</div>
+      <div className="text-lg font-black leading-tight tabular-nums">{value}</div>
+    </div>
+  )
+}
+
+function CalendarLegend() {
+  return (
+    <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-background/70 px-4 py-2.5 text-xs font-bold text-muted-foreground shadow-sm backdrop-blur-sm relative z-10">
+      <div className="flex flex-wrap items-center gap-3">
+        <LegendItem color="bg-blue-500" label="日程" />
+        <LegendItem color="bg-emerald-500" label="日志" />
+        <LegendItem color="bg-amber-500" label="待办" />
+        <LegendItem color="bg-zinc-400" label="已完成" />
+      </div>
+      <span className="text-[11px] font-medium text-muted-foreground/70">色点表示当日内容类型，背景深度表示事项密度</span>
+    </div>
+  )
+}
+
+function LegendItem({ color, label }: { color: string; label: string }) {
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span className={cn("h-2 w-2 rounded-full", color)} />
+      {label}
+    </span>
+  )
+}
+
+function DayStat({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-2xl border bg-muted/20 px-3 py-2 text-center">
+      <div className="text-lg font-black leading-tight tabular-nums">{value}</div>
+      <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{label}</div>
+    </div>
   )
 }
 
