@@ -12,7 +12,7 @@ import { RichEditor } from '@/components/journal/RichEditor'
 import { MarkdownViewer } from '@/components/journal/MarkdownViewer'
 import { useToast } from '@/components/ui/toaster'
 import { formatRelative, todayStr, stripHtml } from '@/lib/utils'
-import { Plus, Search, Trash2, Edit2, Tag, Smile, Copy, FileText, ZoomIn, ZoomOut } from 'lucide-react'
+import { Plus, Search, Trash2, Edit2, Tag, Smile, Copy, FileText, ZoomIn, ZoomOut, CalendarDays } from 'lucide-react'
 
 const MOODS: { value: Mood; label: string; emoji: string }[] = [
   { value: 'happy', label: '开心', emoji: '😊' },
@@ -198,23 +198,31 @@ export function JournalsPage() {
           <Plus className="h-3.5 w-3.5" /> 写日志
         </Button>
       }
+      wide
+      compact
     >
-      <div className="flex-1 flex flex-col gap-6 w-full text-foreground min-h-[500px]">
-        {/* Search */}
-        <div className="relative max-w-md w-full">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="搜索日志标题或内容..."
-            value={search}
-            onChange={e => handleSearch(e.target.value)}
-            className="pl-9 bg-card border shadow-sm rounded-xl h-11"
-          />
+      <div className="flex-1 flex flex-col gap-5 w-full text-foreground min-h-[calc(100vh-180px)]">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(320px,1fr)_auto] gap-4 items-stretch">
+          <div className="relative w-full max-w-3xl">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="搜索标题、正文或标签..."
+              value={search}
+              onChange={e => handleSearch(e.target.value)}
+              className="pl-10 bg-card border shadow-sm rounded-2xl h-12"
+            />
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <JournalMetric label="总数" value={journals.length} />
+            <JournalMetric label="今日" value={journals.filter(j => j.date === todayStr()).length} />
+            <JournalMetric label="标签" value={new Set(journals.flatMap(j => j.tags)).size} />
+          </div>
         </div>
 
         {/* Grid List */}
         <div className="flex-1 min-h-[400px]">
           {loading && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
               {[0, 1, 2, 3, 4, 5, 6, 7].map(i => (
                 <div key={i} className="rounded-2xl border bg-muted/20 p-5 animate-pulse space-y-4">
                   <div className="h-5 bg-muted rounded w-3/4" />
@@ -227,12 +235,17 @@ export function JournalsPage() {
             </div>
           )}
           {!loading && journals.length === 0 && (
-            <div className="flex items-center justify-center h-48 text-sm text-muted-foreground border border-dashed rounded-2xl bg-muted/10 shadow-sm">
-              没有任何日志记录
+            <div className="flex flex-col items-center justify-center h-80 text-sm text-muted-foreground border border-dashed rounded-3xl bg-muted/10 shadow-sm">
+              <FileText className="h-10 w-10 mb-3 opacity-40" />
+              <div className="font-bold text-foreground">没有任何日志记录</div>
+              <div className="mt-1">写下第一篇日志，页面会从这里开始长出来。</div>
+              <Button className="mt-5" size="sm" onClick={openNew}>
+                <Plus className="h-4 w-4 mr-1" /> 写第一篇
+              </Button>
             </div>
           )}
           {!loading && journals.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
               {journals.map(j => (
                 <button
                   key={j.id}
@@ -240,29 +253,32 @@ export function JournalsPage() {
                     setSelectedJournal(j)
                     navigate(`/journals/${j.id}`, { replace: true })
                   }}
-                  className={`text-left rounded-2xl p-5 transition-all duration-300 border flex flex-col h-[200px] ${
+                  className={`group text-left rounded-3xl p-5 transition-all duration-300 border flex flex-col min-h-[220px] relative overflow-hidden ${
                     selectedJournal?.id === j.id
-                      ? 'border-primary bg-accent/40 text-accent-foreground shadow-md ring-1 ring-primary/20'
-                      : 'bg-card hover:border-primary/50 hover:bg-secondary/40 shadow-sm hover:shadow-md hover:-translate-y-0.5'
+                      ? 'border-primary bg-accent/50 text-accent-foreground shadow-md ring-1 ring-primary/20'
+                      : 'bg-card hover:border-primary/40 hover:bg-secondary/30 shadow-sm hover:shadow-md hover:-translate-y-0.5'
                   }`}
                 >
+                  <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-500 via-blue-500 to-amber-500 opacity-0 group-hover:opacity-80 transition-opacity" />
                   <div className="flex items-start justify-between gap-3 w-full">
-                    <span className="text-base font-bold truncate leading-tight">
+                    <span className="text-lg font-black truncate leading-tight">
                       {j.title || '无标题日志'}
                     </span>
                     {j.mood && (
-                      <span className="shrink-0 text-lg leading-none">
+                      <span className="shrink-0 text-xl leading-none">
                         {MOODS.find(m => m.value === j.mood)?.emoji}
                       </span>
                     )}
                   </div>
-                  <p className="text-sm text-muted-foreground mt-3 line-clamp-3 leading-relaxed flex-1 w-full">
+                  <p className="text-sm text-muted-foreground mt-3 line-clamp-4 leading-relaxed flex-1 w-full">
                     {stripHtml(j.content) || '暂无内容'}
                   </p>
-                  <div className="flex items-center flex-wrap gap-2 mt-4 text-xs text-muted-foreground font-medium w-full">
-                    <span className="bg-secondary/60 px-2 py-1 rounded-md text-foreground/80">{j.date}</span>
-                    {j.tags.slice(0, 3).map(tag => (
-                      <span key={tag} className="border border-border/60 rounded-md px-2 py-1 truncate max-w-[80px]">{tag}</span>
+                  <div className="flex items-center gap-2 mt-4 text-xs text-muted-foreground font-medium w-full">
+                    <span className="inline-flex items-center gap-1 bg-secondary/70 px-2.5 py-1 rounded-full text-foreground/80">
+                      <CalendarDays className="h-3 w-3" /> {j.date}
+                    </span>
+                    {j.tags.slice(0, 2).map(tag => (
+                      <span key={tag} className="border border-border/60 rounded-full px-2.5 py-1 truncate max-w-[90px]">#{tag}</span>
                     ))}
                   </div>
                 </button>
@@ -281,84 +297,23 @@ export function JournalsPage() {
           }
         }}
       >
-        <DialogContent className="max-w-[1400px] w-[96vw] shadow-2xl bg-card/95 backdrop-blur-xl border-border/40 sm:rounded-3xl p-6 sm:p-10">
+        <DialogContent className="max-w-[1400px] w-[96vw] max-h-[92vh] overflow-y-auto shadow-2xl bg-card/95 backdrop-blur-xl border-border/40 sm:rounded-3xl p-0">
           {selectedJournal && (
-            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
-              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6 border-b pb-6">
-                <div className="space-y-4">
-                  <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-foreground leading-snug tracking-tight">
-                    {selectedJournal.title || '无标题日志'}
-                  </h2>
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground font-medium">
-                    <span className="px-3 py-1.5 bg-secondary/80 rounded-lg text-secondary-foreground">{selectedJournal.date}</span>
-                    {mood && (
-                      <span className="flex items-center gap-1.5 bg-secondary/80 text-secondary-foreground px-3 py-1.5 rounded-lg">
-                        <Smile className="h-4 w-4" /> <span>{mood.emoji}</span> {mood.label}
-                      </span>
-                    )}
-                  </div>
-                  {selectedJournal.tags.length > 0 && (
-                    <div className="flex items-center gap-2 flex-wrap pt-2">
-                      <Tag className="h-4 w-4 text-muted-foreground mr-1" />
-                      {selectedJournal.tags.map(tag => (
-                        <Badge key={tag} variant="outline" className="px-2.5 py-0.5 bg-background/50 backdrop-blur-sm">{tag}</Badge>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <div className="flex gap-2 shrink-0 flex-wrap justify-end items-center">
-                  <div className="flex items-center bg-secondary/30 border border-border/50 rounded-lg p-0.5 mr-2">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-md" onClick={() => setZoomLevel(z => Math.max(50, z - 10))}>
-                      <ZoomOut className="h-4 w-4" />
-                    </Button>
-                    <span className="text-xs font-medium w-12 text-center select-none">{zoomLevel}%</span>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-md" onClick={() => setZoomLevel(z => Math.min(300, z + 10))}>
-                      <ZoomIn className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <Button variant="outline" size="sm" className="bg-background/50 hover:bg-secondary/80 text-zinc-900 border-border/50" onClick={() => handleCopy(selectedJournal.content, '源码(Markdown)')}>
-                    <FileText className="h-4 w-4 mr-1.5" /> 源码
-                  </Button>
-                  <Button variant="outline" size="sm" className="bg-background/50 hover:bg-secondary/80 text-zinc-900 border-border/50" onClick={() => handleCopy(stripHtml(selectedJournal.content), '纯文本')}>
-                    <Copy className="h-4 w-4 mr-1.5" /> 纯文本
-                  </Button>
-                  <Button variant="outline" size="sm" className="bg-background/50 hover:bg-secondary/80 text-zinc-900 border-border/50" onClick={() => openEdit(selectedJournal)}>
-                    <Edit2 className="h-4 w-4 mr-1.5" /> 编辑
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="text-destructive hover:bg-destructive hover:text-destructive-foreground bg-background/50 border-destructive/20"
-                    onClick={() => {
-                      handleDelete(selectedJournal.id)
-                      navigate('/journals', { replace: true })
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4 mr-1.5" /> 删除
-                  </Button>
-                </div>
-              </div>
-
-              <div 
-                className="pt-2 pb-8 min-h-[30vh] origin-top-left transition-all duration-200"
-                style={{ zoom: `${zoomLevel}%` }}
-              >
-                {selectedJournal.content ? (
-                  <MarkdownViewer content={selectedJournal.content} />
-                ) : (
-                  <p className="text-muted-foreground italic opacity-70">日志内容为空</p>
-                )}
-              </div>
-
-              <div className="text-xs text-muted-foreground font-medium border-t pt-6 flex flex-col sm:flex-row justify-between gap-2 opacity-70">
-                <span>创建于 {formatRelative(selectedJournal.created_at)}</span>
-                <span>更新于 {formatRelative(selectedJournal.updated_at)}</span>
-              </div>
-            </div>
+            <JournalPreview
+              journal={selectedJournal}
+              mood={mood}
+              zoomLevel={zoomLevel}
+              setZoomLevel={setZoomLevel}
+              onCopy={handleCopy}
+              onEdit={openEdit}
+              onDelete={(journal) => {
+                handleDelete(journal.id)
+                navigate('/journals', { replace: true })
+              }}
+            />
           )}
         </DialogContent>
       </Dialog>
-
       {/* Edit/Create Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-3xl w-[96vw] sm:rounded-3xl p-6 sm:p-8">
@@ -458,5 +413,101 @@ export function JournalsPage() {
         </DialogContent>
       </Dialog>
     </PageLayout>
+  )
+}
+
+function JournalMetric({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-2xl border bg-card px-4 py-2.5 shadow-sm min-w-[92px]">
+      <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{label}</div>
+      <div className="text-2xl font-black tabular-nums leading-tight">{value}</div>
+    </div>
+  )
+}
+
+function JournalPreview({
+  journal,
+  mood,
+  zoomLevel,
+  setZoomLevel,
+  onCopy,
+  onEdit,
+  onDelete,
+}: {
+  journal: Journal
+  mood?: { value: Mood; label: string; emoji: string }
+  zoomLevel: number
+  setZoomLevel: React.Dispatch<React.SetStateAction<number>>
+  onCopy: (text: string, type: string) => void
+  onEdit: (journal: Journal) => void
+  onDelete: (journal: Journal) => void
+}) {
+  return (
+    <div>
+      <div className="p-6 border-b bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.10),transparent_34%),radial-gradient(circle_at_top_right,rgba(59,130,246,0.10),transparent_32%)]">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <h2 className="text-2xl font-black leading-tight tracking-tight truncate">
+              {journal.title || '无标题日志'}
+            </h2>
+            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-bold text-muted-foreground">
+              <span className="rounded-full bg-secondary px-3 py-1 text-secondary-foreground">{journal.date}</span>
+              {mood && (
+                <span className="rounded-full bg-secondary px-3 py-1 text-secondary-foreground">
+                  {mood.emoji} {mood.label}
+                </span>
+              )}
+            </div>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => onEdit(journal)}>
+            <Edit2 className="h-4 w-4 mr-1" /> 编辑
+          </Button>
+        </div>
+
+        {journal.tags.length > 0 && (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {journal.tags.map(tag => (
+              <Badge key={tag} variant="outline" className="bg-background/60">#{tag}</Badge>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2 p-4 border-b bg-muted/15">
+        <div className="flex items-center bg-background border rounded-lg p-0.5 mr-auto">
+          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-md" onClick={() => setZoomLevel(z => Math.max(50, z - 10))}>
+            <ZoomOut className="h-4 w-4" />
+          </Button>
+          <span className="text-xs font-medium w-12 text-center select-none">{zoomLevel}%</span>
+          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-md" onClick={() => setZoomLevel(z => Math.min(300, z + 10))}>
+            <ZoomIn className="h-4 w-4" />
+          </Button>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => onCopy(journal.content, '源码(Markdown)')}>
+          <FileText className="h-4 w-4 mr-1" /> 源码
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => onCopy(stripHtml(journal.content), '纯文本')}>
+          <Copy className="h-4 w-4 mr-1" /> 文本
+        </Button>
+        <Button variant="outline" size="sm" className="text-destructive hover:bg-destructive hover:text-destructive-foreground" onClick={() => onDelete(journal)}>
+          <Trash2 className="h-4 w-4 mr-1" /> 删除
+        </Button>
+      </div>
+
+      <div className="p-6">
+        <div className="origin-top-left transition-all duration-200" style={{ zoom: `${zoomLevel}%` }}>
+          {journal.content ? (
+            <MarkdownViewer content={journal.content} />
+          ) : (
+            <p className="text-muted-foreground italic opacity-70">日志内容为空</p>
+          )}
+        </div>
+      </div>
+
+      <div className="px-6 pb-6 text-xs text-muted-foreground font-medium flex flex-col gap-1 opacity-70">
+        <span>创建于 {formatRelative(journal.created_at)}</span>
+        <span>更新于 {formatRelative(journal.updated_at)}</span>
+      </div>
+    </div>
   )
 }

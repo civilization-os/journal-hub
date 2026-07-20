@@ -4,6 +4,52 @@ import { zhCN } from 'date-fns/locale'
 import { Todo } from '@/types'
 import { cn, todayStr } from '@/lib/utils'
 
+type GanttStatus = 'not-started' | 'healthy' | 'overdue' | 'done'
+
+const STATUS_META: Record<GanttStatus, {
+  label: string
+  dot: string
+  track: string
+  progress: string
+  text: string
+}> = {
+  'not-started': {
+    label: '未开始',
+    dot: 'bg-zinc-400 shadow-zinc-400/40',
+    track: 'bg-zinc-500/10 border-zinc-500/25',
+    progress: 'bg-zinc-400',
+    text: 'text-zinc-600 dark:text-zinc-400',
+  },
+  healthy: {
+    label: '健康进行中',
+    dot: 'bg-emerald-500 shadow-emerald-500/40',
+    track: 'bg-emerald-500/10 border-emerald-500/30',
+    progress: 'bg-emerald-500',
+    text: 'text-emerald-700 dark:text-emerald-400',
+  },
+  overdue: {
+    label: '超期进行中',
+    dot: 'bg-rose-500 shadow-rose-500/40',
+    track: 'bg-rose-500/10 border-rose-500/35',
+    progress: 'bg-rose-500',
+    text: 'text-rose-700 dark:text-rose-400',
+  },
+  done: {
+    label: '完成',
+    dot: 'bg-blue-500 shadow-blue-500/40',
+    track: 'bg-blue-500/10 border-blue-500/30',
+    progress: 'bg-blue-500',
+    text: 'text-blue-700 dark:text-blue-400',
+  },
+}
+
+function getGanttStatus(todo: Todo, today: string): GanttStatus {
+  if (todo.completed || todo.status === 'done' || (todo.progress ?? 0) >= 100) return 'done'
+  if ((todo.progress ?? 0) <= 0) return 'not-started'
+  if (todo.due_date && todo.due_date < today) return 'overdue'
+  return 'healthy'
+}
+
 export function TodoGanttChart({ todos, onPreview }: { todos: Todo[], onPreview: (t: Todo) => void }) {
   const { days, minDate } = useMemo(() => {
     if (todos.length === 0) return { days: [], minDate: new Date() }
@@ -44,6 +90,17 @@ export function TodoGanttChart({ todos, onPreview }: { todos: Todo[], onPreview:
 
   return (
     <div className="border rounded-2xl bg-card shadow-sm overflow-hidden flex flex-col min-h-[500px] h-[calc(100vh-280px)]">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b bg-muted/20 px-4 py-3">
+        <div className="text-sm font-black text-foreground">甘特图状态</div>
+        <div className="flex flex-wrap items-center gap-3">
+          {(Object.keys(STATUS_META) as GanttStatus[]).map(status => (
+            <div key={status} className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground">
+              <span className={cn("h-2.5 w-2.5 rounded-full shadow-sm", STATUS_META[status].dot)} />
+              {STATUS_META[status].label}
+            </div>
+          ))}
+        </div>
+      </div>
       <div className="flex-1 overflow-auto flex relative custom-scrollbar">
         {/* Left Sticky Column */}
         <div className="w-[260px] shrink-0 border-r bg-card sticky left-0 z-30 flex flex-col shadow-[2px_0_15px_rgba(0,0,0,0.08)]">
@@ -52,18 +109,23 @@ export function TodoGanttChart({ todos, onPreview }: { todos: Todo[], onPreview:
           </div>
           <div className="flex-1 bg-card">
             {todos.map(t => (
-              <div 
-                key={t.id} 
-                className="h-14 border-b flex items-center px-4 hover:bg-secondary/80 cursor-pointer text-sm truncate transition-colors group"
-                onClick={() => onPreview(t)}
-              >
-                <div className={cn("w-2.5 h-2.5 rounded-full mr-3 shrink-0 shadow-sm transition-transform group-hover:scale-125", 
-                  t.priority === 'high' ? 'bg-rose-500 shadow-rose-500/50' : 
-                  t.priority === 'medium' ? 'bg-amber-500 shadow-amber-500/50' : 
-                  'bg-zinc-500 shadow-zinc-500/50'
-                )} />
-                <span className={cn("truncate font-medium transition-colors", t.completed ? "line-through opacity-40" : "text-foreground group-hover:text-primary")}>{t.title}</span>
-              </div>
+              (() => {
+                const status = getGanttStatus(t, today)
+                const meta = STATUS_META[status]
+                return (
+                  <div 
+                    key={t.id} 
+                    className="h-14 border-b flex items-center px-4 hover:bg-secondary/80 cursor-pointer text-sm truncate transition-colors group"
+                    onClick={() => onPreview(t)}
+                  >
+                    <div className={cn("w-2.5 h-2.5 rounded-full mr-3 shrink-0 shadow-sm transition-transform group-hover:scale-125", meta.dot)} />
+                    <div className="min-w-0 flex-1">
+                      <span className={cn("block truncate font-medium transition-colors", status === 'done' ? "line-through opacity-50" : "text-foreground group-hover:text-primary")}>{t.title}</span>
+                      <span className={cn("text-[10px] font-bold", meta.text)}>{meta.label}</span>
+                    </div>
+                  </div>
+                )
+              })()
             ))}
           </div>
         </div>
@@ -108,20 +170,8 @@ export function TodoGanttChart({ todos, onPreview }: { todos: Todo[], onPreview:
               const barWidth = Math.max(width - 12, 24)
               const isShort = barWidth < 100
 
-              const barTrackColor = t.completed ? 'bg-zinc-500/10 border-zinc-500/20' : 
-                            t.priority === 'high' ? 'bg-rose-500/10 border-rose-500/30' : 
-                            t.priority === 'medium' ? 'bg-amber-500/10 border-amber-500/30' : 
-                            'bg-blue-500/10 border-blue-500/30'
-
-              const barProgressColor = t.completed ? 'bg-emerald-500' :
-                            t.priority === 'high' ? 'bg-rose-500' : 
-                            t.priority === 'medium' ? 'bg-amber-500' : 
-                            'bg-blue-500'
-
-              const textColorOutside = t.completed ? 'text-zinc-500 line-through opacity-60' :
-                            t.priority === 'high' ? 'text-rose-600 dark:text-rose-400' : 
-                            t.priority === 'medium' ? 'text-amber-600 dark:text-amber-400' : 
-                            'text-blue-600 dark:text-blue-400'
+              const status = getGanttStatus(t, today)
+              const meta = STATUS_META[status]
 
               return (
                 <div key={t.id} className="h-14 border-b flex items-center relative group hover:bg-muted/30 transition-colors">
@@ -139,9 +189,9 @@ export function TodoGanttChart({ todos, onPreview }: { todos: Todo[], onPreview:
                     onClick={() => onPreview(t)}
                   >
                     {/* Colored Box */}
-                    <div className={cn("h-full rounded-lg border overflow-hidden relative shadow-sm", barTrackColor)} style={{ width: `${barWidth}px` }}>
+                    <div className={cn("h-full rounded-lg border overflow-hidden relative shadow-sm", meta.track)} style={{ width: `${barWidth}px` }}>
                       <div
-                        className={cn("h-full rounded-md transition-all", barProgressColor)}
+                        className={cn("h-full rounded-md transition-all", meta.progress)}
                         style={{ width: `${t.progress ?? 0}%` }}
                       />
                       <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-foreground/80">
@@ -151,11 +201,11 @@ export function TodoGanttChart({ todos, onPreview }: { todos: Todo[], onPreview:
                     
                     {/* Text */}
                     {isShort ? (
-                      <span className={cn("ml-2 text-xs font-bold whitespace-nowrap drop-shadow-sm transition-transform group-hover:translate-x-1", textColorOutside)}>
+                      <span className={cn("ml-2 text-xs font-bold whitespace-nowrap drop-shadow-sm transition-transform group-hover:translate-x-1", meta.text, status === 'done' && "line-through opacity-70")}>
                         {t.title}
                       </span>
                     ) : (
-                      <span className={cn("absolute left-3 text-xs font-semibold whitespace-nowrap truncate pointer-events-none drop-shadow-sm", t.completed ? "text-zinc-500 dark:text-zinc-400 line-through" : "text-white")} style={{ maxWidth: `${barWidth - 24}px` }}>
+                      <span className={cn("absolute left-3 text-xs font-semibold whitespace-nowrap truncate pointer-events-none drop-shadow-sm", status === 'done' ? "text-blue-950/70 dark:text-blue-100/80 line-through" : "text-white")} style={{ maxWidth: `${barWidth - 24}px` }}>
                         {t.title}
                       </span>
                     )}

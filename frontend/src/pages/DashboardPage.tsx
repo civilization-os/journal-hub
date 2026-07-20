@@ -5,7 +5,7 @@ import { PageLayout } from '@/components/layout/PageLayout'
 import { MarkdownViewer } from '@/components/journal/MarkdownViewer'
 import { useToast } from '@/components/ui/toaster'
 import { Stats } from '@/types'
-import { formatRelative, todayStr, stripHtml } from '@/lib/utils'
+import { cn, formatRelative, todayStr, stripHtml } from '@/lib/utils'
 import { BookOpen, CheckSquare, Calendar, Plus, ArrowRight, TrendingUp, Clock, Sparkles } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -56,16 +56,16 @@ export function DashboardPage() {
 
   const headerTitle = (
     <div className="flex flex-wrap items-center gap-3">
-      <div className="flex items-center gap-3 rounded-2xl border bg-card px-4 py-2 shadow-sm">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-          <Calendar className="h-5 w-5" />
+      <div className="flex items-center gap-3 rounded-2xl border bg-card px-3.5 py-2 shadow-sm">
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+          <Calendar className="h-4 w-4" />
         </div>
         <div>
-          <div className="text-xl font-black tracking-tight">{formattedToday}</div>
-          <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Journal Hub 工作台</div>
+          <div className="text-lg font-black tracking-tight">{formattedToday}</div>
+          <div className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Journal Hub 工作台</div>
         </div>
       </div>
-      <div className="flex items-center gap-2 rounded-2xl border bg-muted/40 px-4 py-3 font-mono text-sm font-bold text-foreground shadow-sm">
+      <div className="flex items-center gap-2 rounded-2xl border bg-muted/40 px-3.5 py-2.5 font-mono text-sm font-bold text-foreground shadow-sm">
         <Clock className="h-4 w-4 text-muted-foreground" />
         {formattedTime}
       </div>
@@ -73,32 +73,32 @@ export function DashboardPage() {
   )
 
   return (
-    <PageLayout title={headerTitle}>
-      <div className="space-y-8 w-full">
+    <PageLayout title={headerTitle} wide compact>
+      <div className="space-y-5 w-full">
         {/* Welcome Hero Area */}
         <Card className="relative overflow-hidden border shadow-sm bg-card">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(250,204,21,0.18),transparent_28%),radial-gradient(circle_at_top_right,rgba(59,130,246,0.10),transparent_34%)]" />
           <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-yellow-400 via-blue-500 to-emerald-500" />
-          <CardContent className="p-6 md:p-8 relative z-10 flex flex-col gap-8 w-full">
-            <div className="space-y-4 w-full">
+          <CardContent className="p-5 md:p-6 relative z-10 flex flex-col gap-5 w-full">
+            <div className="space-y-3 w-full">
               {suggestion ? (
                 <>
                   <div className="flex items-center justify-between gap-4 flex-wrap">
-                    <h1 className="text-2xl sm:text-3xl font-black tracking-tight flex items-center gap-3">
-                      <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-yellow-400/15 text-yellow-600 dark:text-yellow-300 border border-yellow-400/20">
-                        <Sparkles className="h-6 w-6" />
+                    <h1 className="text-xl sm:text-2xl font-black tracking-tight flex items-center gap-3">
+                      <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-yellow-400/15 text-yellow-600 dark:text-yellow-300 border border-yellow-400/20">
+                        <Sparkles className="h-5 w-5" />
                       </span>
                       AI 今日建议
                     </h1>
                     <Badge variant="secondary" className="rounded-full px-3 py-1 font-bold">由 MCP 数据生成</Badge>
                   </div>
-                  <div className="rounded-2xl border bg-muted/25 p-5 shadow-inner overflow-hidden">
+                  <div className="max-h-[220px] overflow-auto rounded-2xl border bg-muted/25 p-4 shadow-inner">
                     <MarkdownViewer 
                       content={suggestion} 
                       className="max-w-none prose-p:text-foreground/85 prose-headings:text-foreground prose-strong:text-foreground prose-a:text-foreground hover:prose-a:text-foreground/80 prose-code:text-foreground prose-li:text-foreground/85 prose-blockquote:text-muted-foreground prose-blockquote:border-primary/30 !prose-sm"
                     />
                   </div>
-                  <div className="flex flex-wrap gap-3 pt-1">
+                  <div className="flex flex-wrap gap-2 pt-0">
                     <Link to="/todos">
                       <Button variant="secondary" size="sm" className="rounded-full font-bold">
                         查看待办 <ArrowRight className="h-4 w-4 ml-1" />
@@ -126,9 +126,9 @@ export function DashboardPage() {
         </Card>
 
         {/* Core Layout Grid - split on xl screens, stack on lg and below */}
-        <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 w-full">
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 w-full">
           {/* Left Column - Stats and Journals */}
-          <div className="xl:col-span-8 space-y-6 w-full min-w-0">
+          <div className="xl:col-span-9 space-y-5 w-full min-w-0">
             {/* Stats Row - responsive from 1 to 3 columns */}
             {!loading && stats && (
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -138,9 +138,10 @@ export function DashboardPage() {
                   value={stats.journals.total}
                   sub={`今日写入 ${stats.journals.today} 篇`}
                   to="/journals"
-                  color="border-t-emerald-500/80"
+                  tone="emerald"
                   badge={`${stats.journals.today > 0 ? '已记录' : '待执笔'}`}
-                  badgeColor="emerald"
+                  meter={stats.journals.today > 0 ? 100 : 12}
+                  insight={stats.journals.today > 0 ? '今日已沉淀' : '今天还没写'}
                 />
                 <StatCard
                   icon={CheckSquare}
@@ -148,9 +149,10 @@ export function DashboardPage() {
                   value={stats.todos.pending}
                   sub={`已完成 ${stats.todos.completed} 项`}
                   to="/todos"
-                  color="border-t-blue-500/80"
+                  tone={stats.todos.pending > 0 ? 'blue' : 'emerald'}
                   badge={`${stats.todos.pending > 0 ? '进行中' : '全搞定'}`}
-                  badgeColor={stats.todos.pending > 0 ? 'blue' : 'emerald'}
+                  meter={stats.todos.pending + stats.todos.completed > 0 ? Math.round((stats.todos.completed / (stats.todos.pending + stats.todos.completed)) * 100) : 100}
+                  insight={stats.todos.pending > 0 ? '仍需推进' : '任务清空'}
                 />
                 <StatCard
                   icon={Calendar}
@@ -158,9 +160,10 @@ export function DashboardPage() {
                   value={stats.events.total}
                   sub="全部已记录行程"
                   to="/calendar"
-                  color="border-t-purple-500/80"
+                  tone="purple"
                   badge="日历"
-                  badgeColor="purple"
+                  meter={stats.events.total > 0 ? 72 : 8}
+                  insight={stats.events.total > 0 ? '已有安排' : '暂无行程'}
                 />
               </div>
             )}
@@ -257,7 +260,7 @@ export function DashboardPage() {
           </div>
 
           {/* Right Column - Actions & Todos */}
-          <div className="xl:col-span-4 space-y-6 w-full min-w-0">
+          <div className="xl:col-span-3 space-y-5 w-full min-w-0">
             {/* Quick Actions */}
             <Card>
               <CardHeader className="pb-4">
@@ -360,28 +363,71 @@ interface StatCardProps {
   value: number
   sub: string
   to: string
-  color: string
+  tone: 'emerald' | 'blue' | 'purple'
   badge: string
-  badgeColor: string
+  meter: number
+  insight: string
 }
 
-function StatCard({ icon: Icon, label, value, sub, to, color, badge, badgeColor }: StatCardProps) {
+function StatCard({ icon: Icon, label, value, sub, to, tone, badge, meter, insight }: StatCardProps) {
+  const styles = {
+    emerald: {
+      glow: 'from-emerald-500/18 via-emerald-500/5 to-transparent',
+      icon: 'bg-emerald-500/12 text-emerald-700 dark:text-emerald-300 border-emerald-500/20',
+      bar: 'bg-emerald-500',
+      badge: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20',
+    },
+    blue: {
+      glow: 'from-blue-500/18 via-blue-500/5 to-transparent',
+      icon: 'bg-blue-500/12 text-blue-700 dark:text-blue-300 border-blue-500/20',
+      bar: 'bg-blue-500',
+      badge: 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20',
+    },
+    purple: {
+      glow: 'from-purple-500/18 via-purple-500/5 to-transparent',
+      icon: 'bg-purple-500/12 text-purple-700 dark:text-purple-300 border-purple-500/20',
+      bar: 'bg-purple-500',
+      badge: 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/20',
+    },
+  }[tone]
+
   return (
     <Link to={to} className="block">
-      <Card className="group transition-all duration-200 hover:border-primary/50 relative overflow-hidden h-full">
-        <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${color}`} />
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <span className="text-sm font-bold text-muted-foreground uppercase tracking-wider">{label}</span>
-            <Badge variant="secondary" className="bg-secondary/50">
+      <Card className="group transition-all duration-300 hover:border-primary/40 hover:-translate-y-0.5 hover:shadow-md relative overflow-hidden h-full">
+        <div className={cn("pointer-events-none absolute inset-0 bg-gradient-to-br", styles.glow)} />
+        <div className={cn("absolute top-0 left-0 h-1 w-full", styles.bar)} />
+        <CardContent className="p-5 relative z-10">
+          <div className="flex items-start justify-between gap-3 mb-5">
+            <div className={cn("flex h-11 w-11 items-center justify-center rounded-2xl border shadow-sm", styles.icon)}>
+              <Icon className="h-5 w-5" />
+            </div>
+            <Badge variant="outline" className={cn("rounded-full px-2.5 py-0.5 font-bold border", styles.badge)}>
               {badge}
             </Badge>
           </div>
-          <div className="flex items-baseline gap-3">
-            <div className="text-4xl font-black tracking-tight tabular-nums">{value}</div>
-            <TrendingUp className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+
+          <div className="flex items-end justify-between gap-3">
+            <div>
+              <div className="text-xs font-black text-muted-foreground uppercase tracking-widest">{label}</div>
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="text-5xl font-black tracking-tight tabular-nums leading-none">{value}</span>
+                <TrendingUp className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-xs font-bold text-muted-foreground">{insight}</div>
+            </div>
           </div>
-          <div className="text-sm text-muted-foreground mt-4 font-medium">{sub}</div>
+
+          <div className="mt-5 space-y-2">
+            <div className="flex items-center justify-between gap-3 text-xs font-bold text-muted-foreground">
+              <span>{sub}</span>
+              <span className="tabular-nums">{meter}%</span>
+            </div>
+            <div className="h-2 rounded-full bg-muted overflow-hidden">
+              <div className={cn("h-full rounded-full transition-all", styles.bar)} style={{ width: `${meter}%` }} />
+            </div>
+          </div>
         </CardContent>
       </Card>
     </Link>
