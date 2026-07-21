@@ -25,14 +25,17 @@ jobs:
           cache: 'npm'
           cache-dependency-path: 'frontend/package-lock.json'
 
-      - name: Install Root & Backend Dependencies
-        run: |
-          npm install --prefix backend
-          npm install --prefix mcp-server
+      - name: Install Backend Dependencies
+        working-directory: ./backend
+        run: npm install
+
+      - name: Install MCP Server Dependencies
+        working-directory: ./mcp-server
+        run: npm install
 
       - name: Install Frontend Dependencies
         working-directory: ./frontend
-        run: npm ci || npm install
+        run: npm install
 
       - name: Build Electron App (Windows Installer)
         working-directory: ./frontend
