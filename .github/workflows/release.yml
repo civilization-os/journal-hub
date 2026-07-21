@@ -39,8 +39,6 @@ jobs:
 
       - name: Build Electron App (Windows Installer)
         working-directory: ./frontend
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run build:electron
 
       - name: Publish GitHub Release
