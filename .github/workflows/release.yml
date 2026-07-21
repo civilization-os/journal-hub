@@ -27,11 +27,11 @@ jobs:
 
       - name: Install Backend Dependencies
         working-directory: ./backend
-        run: npm install
+        run: npm install --ignore-scripts
 
       - name: Install MCP Server Dependencies
         working-directory: ./mcp-server
-        run: npm install
+        run: npm install --ignore-scripts
 
       - name: Install Frontend Dependencies
         working-directory: ./frontend
