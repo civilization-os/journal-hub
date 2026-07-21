@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { HashRouter, Routes, Route } from 'react-router-dom'
+import { TitleBar } from '@/components/layout/TitleBar'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { ToasterProvider } from '@/components/ui/toaster'
 import { DashboardPage } from '@/pages/DashboardPage'
@@ -10,7 +11,7 @@ import { CalendarPage } from '@/pages/CalendarPage'
 function App() {
   useEffect(() => {
     // Connect to SSE stream
-    const sse = new EventSource('/api/stream')
+    const sse = new EventSource(import.meta.env.PROD ? 'http://127.0.0.1:3001/api/stream' : '/api/stream')
     sse.onmessage = (e) => {
       try {
         const data = JSON.parse(e.data)
@@ -30,20 +31,33 @@ function App() {
   }, [])
 
   return (
-    <BrowserRouter>
+    <HashRouter>
       <ToasterProvider>
-        <div className="flex min-h-screen w-full bg-background">
-          <Sidebar />
-          <Routes>
-            <Route path="/" element={<DashboardPage />} />
-            <Route path="/journals" element={<JournalsPage />} />
-            <Route path="/journals/:id" element={<JournalsPage />} />
-            <Route path="/todos" element={<TodosPage />} />
-            <Route path="/calendar" element={<CalendarPage />} />
-          </Routes>
+        <div className="flex h-screen w-full bg-[#f5f5f7] overflow-hidden text-zinc-900 relative">
+          <TitleBar />
+          
+          {/* Sidebar Area */}
+          <div className="w-64 shrink-0 flex flex-col z-10 pt-14">
+            <Sidebar />
+          </div>
+
+          {/* Main Content Area */}
+          <div className="flex-1 flex flex-col p-2 pl-0 z-10">
+            <div className="flex-1 bg-white rounded-xl shadow-sm border border-zinc-200 overflow-hidden flex flex-col">
+              <div className="flex-1 overflow-auto p-6 pt-10">
+                <Routes>
+                  <Route path="/" element={<DashboardPage />} />
+                  <Route path="/journals" element={<JournalsPage />} />
+                  <Route path="/journals/:id" element={<JournalsPage />} />
+                  <Route path="/todos" element={<TodosPage />} />
+                  <Route path="/calendar" element={<CalendarPage />} />
+                </Routes>
+              </div>
+            </div>
+          </div>
         </div>
       </ToasterProvider>
-    </BrowserRouter>
+    </HashRouter>
   )
 }
 

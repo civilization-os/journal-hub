@@ -55,3 +55,18 @@ export interface Stats {
 
 export type Mood = 'happy' | 'excited' | 'neutral' | 'sad' | 'anxious' | 'grateful'
 export type Priority = 'high' | 'medium' | 'low'
+
+declare global {
+  interface Window {
+    electronAPI: {
+      getDataPath: () => Promise<string>
+      selectDirectory: () => Promise<string | null>
+      migrateData: (targetPath: string) => Promise<{ success: boolean; message?: string }>
+      toggleMcp: (enabled: boolean) => Promise<boolean>
+      getSettings: () => Promise<{ mcpEnabled?: boolean }>
+      minimize: () => void
+      maximize: () => void
+      close: () => void
+    }
+  }
+}

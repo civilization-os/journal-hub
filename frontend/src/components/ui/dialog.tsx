@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -64,34 +65,33 @@ export const DialogContent = React.forwardRef<
     return () => document.removeEventListener('keydown', handleEscape)
   }, [ctx.open, ctx])
 
-  return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex min-h-full items-center justify-center p-4 sm:p-8">
-        {/* Backdrop */}
-        <div
-          className="fixed inset-0 bg-black/40 backdrop-blur-md transition-opacity duration-200"
-          onClick={() => ctx.setOpen(false)}
-        />
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
+        onClick={() => ctx.setOpen(false)}
+      />
 
-        {/* Content box */}
-        <div
-          ref={ref}
-          className={cn(
-            'relative w-full max-w-lg bg-background border rounded-xl shadow-lg p-6 animate-in zoom-in-95 duration-200 flex flex-col gap-4 z-10 sm:my-8',
-            className
-          )}
-          {...props}
+      {/* Content box */}
+      <div
+        ref={ref}
+        className={cn(
+          'relative w-full max-w-lg bg-white text-zinc-900 border border-zinc-200 rounded-2xl shadow-2xl p-6 flex flex-col gap-4 z-10',
+          className
+        )}
+        {...props}
+      >
+        {children}
+        <button
+          onClick={() => ctx.setOpen(false)}
+          className="absolute right-4 top-4 rounded-md p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 transition-colors cursor-pointer"
         >
-          {children}
-          <button
-            onClick={() => ctx.setOpen(false)}
-            className="absolute right-4 top-4 rounded-md p-1 text-muted-foreground hover:bg-secondary transition-colors focus-visible:outline-none cursor-pointer"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
+          <X className="h-4 w-4" />
+        </button>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 })
 DialogContent.displayName = 'DialogContent'

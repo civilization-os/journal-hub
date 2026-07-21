@@ -2,7 +2,7 @@ import axios from 'axios'
 import type { Journal, Todo, CalendarEvent, DayData, Stats } from '@/types'
 
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: import.meta.env.PROD ? 'http://127.0.0.1:3001/api' : '/api',
   headers: { 'Content-Type': 'application/json' },
 })
 

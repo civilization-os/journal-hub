@@ -1,5 +1,11 @@
 node_modules/
 dist/
+dist-electron/
+release/
+frontend/dist/
+frontend/dist-electron/
+frontend/release/
+.codex/
 .env
 .env.local
 data/
