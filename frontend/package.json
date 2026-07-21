@@ -10,7 +10,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "build:electron": "tsc && vite build && electron-builder -c.publish=never",
+    "build:electron": "tsc && vite build && electron-builder -p never",
     "preview": "vite preview"
   },
   "devDependencies": {
@@ -56,7 +56,6 @@
   "build": {
     "appId": "com.journalhub.app",
     "productName": "Journal Hub",
-    "publish": null,
     "icon": "public/favicon.ico",
     "directories": {
       "output": "release"
