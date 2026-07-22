@@ -1,4 +1,5 @@
 import axios from 'axios'
+import type { AxiosError, AxiosRequestConfig } from 'axios'
 import type { Journal, Todo, CalendarEvent, DayData, Stats } from '@/types'
 
 const api = axios.create({
@@ -11,29 +12,59 @@ interface ApiResponse<T> {
   total?: number
 }
 
+const STARTUP_RETRY_ATTEMPTS = 30
+const STARTUP_RETRY_DELAY_MS = 250
+
+function delay(ms: number) {
+  return new Promise(resolve => window.setTimeout(resolve, ms))
+}
+
+function isRetryableStartupError(error: unknown) {
+  const axiosError = error as AxiosError
+  return axios.isAxiosError(error) && !axiosError.response
+}
+
+async function requestWithStartupRetry<T>(config: AxiosRequestConfig) {
+  let lastError: unknown
+
+  for (let attempt = 1; attempt <= STARTUP_RETRY_ATTEMPTS; attempt += 1) {
+    try {
+      return await api.request<ApiResponse<T>>(config)
+    } catch (error) {
+      lastError = error
+      if (!isRetryableStartupError(error) || attempt === STARTUP_RETRY_ATTEMPTS) {
+        throw error
+      }
+      await delay(STARTUP_RETRY_DELAY_MS)
+    }
+  }
+
+  throw lastError
+}
+
 // Generic request helper
 async function get<T>(url: string, params?: Record<string, unknown>) {
-  const r = await api.get<ApiResponse<T>>(url, { params })
+  const r = await requestWithStartupRetry<T>({ method: 'GET', url, params })
   return r.data
 }
 
 async function post<T>(url: string, data: Record<string, unknown>) {
-  const r = await api.post<ApiResponse<T>>(url, data)
+  const r = await requestWithStartupRetry<T>({ method: 'POST', url, data })
   return r.data
 }
 
 async function put<T>(url: string, data: Record<string, unknown>) {
-  const r = await api.put<ApiResponse<T>>(url, data)
+  const r = await requestWithStartupRetry<T>({ method: 'PUT', url, data })
   return r.data
 }
 
 async function patch<T>(url: string, data: Record<string, unknown>) {
-  const r = await api.patch<ApiResponse<T>>(url, data)
+  const r = await requestWithStartupRetry<T>({ method: 'PATCH', url, data })
   return r.data
 }
 
 async function del<T>(url: string) {
-  const r = await api.delete<ApiResponse<T>>(url)
+  const r = await requestWithStartupRetry<T>({ method: 'DELETE', url })
   return r.data
 }
 

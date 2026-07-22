@@ -1,6 +1,30 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db/database');
+const fs = require('fs');
+const path = require('path');
+
+// GET /api/settings/mcp-status
+router.get('/mcp-status', (req, res) => {
+  console.log('[DEBUG] mcp-status route HIT!');
+  try {
+    const settingsPath = path.join(process.env.APP_DATA_DIR || path.join(__dirname, '../../data'), 'settings.json');
+    let enabled = false;
+
+    if (fs.existsSync(settingsPath)) {
+      const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
+      enabled = settings.mcpEnabled === true;
+    }
+
+    if (!enabled) {
+      return res.status(403).json({ data: { enabled: false } });
+    }
+
+    res.json({ data: { enabled: true } });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // GET /api/settings/:key
 router.get('/:key', (req, res) => {

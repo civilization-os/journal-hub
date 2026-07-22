@@ -73,8 +73,22 @@
         ]
       },
       {
+        "from": "../mcp-server/node_modules",
+        "to": "mcp-server/node_modules",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
         "from": "../backend",
         "to": "backend",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "../backend/node_modules",
+        "to": "backend/node_modules",
         "filter": [
           "**/*"
         ]

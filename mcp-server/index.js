@@ -4,14 +4,14 @@ const { Server } = require('@modelcontextprotocol/sdk/server/index.js');
 const { StdioServerTransport } = require('@modelcontextprotocol/sdk/server/stdio.js');
 const { CallToolRequestSchema, ListToolsRequestSchema, ListPromptsRequestSchema, GetPromptRequestSchema } = require('@modelcontextprotocol/sdk/types.js');
 const axios = require('axios');
-const { app } = require('../backend/src/app.js');
 const { exec } = require('child_process');
 const os = require('os');
 
 const PORT = process.env.PORT || 3001;
-const API_BASE = `http://localhost:${PORT}/api`;
+const API_BASE = process.env.JOURNAL_HUB_API_BASE || `http://127.0.0.1:${PORT}/api`;
 
 const api = axios.create({ baseURL: API_BASE, timeout: 10000 });
+const DESKTOP_REQUIRED_MESSAGE = 'Journal Hub Desktop is not running or MCP is disabled. Please start Journal Hub Desktop and enable MCP in Settings, then retry this tool.';
 
 // ==================== Tool Definitions ====================
 const TOOLS = [
@@ -307,8 +307,27 @@ function openBrowser(url) {
   }
 }
 
+async function ensureDesktopMcpAvailable() {
+  try {
+    const res = await api.get('/settings/mcp-status', { timeout: 2000 });
+    if (res.data?.data?.enabled !== true) {
+      throw new Error('MCP is disabled in Journal Hub Desktop settings.');
+    }
+  } catch (error) {
+    if (error.response?.status === 403) {
+      throw new Error('MCP is disabled in Journal Hub Desktop settings.');
+    }
+    if (error.message === 'MCP is disabled in Journal Hub Desktop settings.') {
+      throw error;
+    }
+    throw new Error(DESKTOP_REQUIRED_MESSAGE);
+  }
+}
+
 // ==================== Tool Handlers ====================
 async function handleTool(name, args) {
+  await ensureDesktopMcpAvailable();
+
   switch (name) {
     case 'journal_list': {
       const res = await api.get('/journals', { params: args });
@@ -418,6 +437,12 @@ async function handleTool(name, args) {
 
 // ==================== MCP Server ====================
 async function startMcpServer() {
+  const server = createMcpServer();
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+}
+
+function createMcpServer() {
   const server = new Server(
     { name: 'journal-hub-mcp', version: '1.0.1' },
     { capabilities: { tools: {}, prompts: {} } }
@@ -466,32 +491,22 @@ async function startMcpServer() {
     }
   });
 
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
+  return server;
 }
 
 async function main() {
-  // Multi-startup protection: Try to start the Web/API server and mount dist
-  const server = app.listen(PORT, '0.0.0.0', () => {
-    console.error(`Journal Hub Web/API server running on http://localhost:${PORT}`);
-    startMcpServer().catch(err => {
-      console.error('Fatal MCP Error:', err);
-      process.exit(1);
-    });
-  });
-
-  server.on('error', (err) => {
-    if (err.code === 'EADDRINUSE') {
-      console.error(`Port ${PORT} in use (multi-startup protection active). Proceeding to provide AI operation func...`);
-      startMcpServer().catch(err => {
-        console.error('Fatal MCP Error:', err);
-        process.exit(1);
-      });
-    } else {
-      console.error('Fatal Server Error:', err);
-      process.exit(1);
-    }
+  startMcpServer().catch(err => {
+    console.error('Fatal MCP Error:', err);
+    process.exit(1);
   });
 }
 
-main();
+if (require.main === module) {
+  main();
+}
+
+module.exports = {
+  createMcpServer,
+  startMcpServer,
+  handleTool,
+};

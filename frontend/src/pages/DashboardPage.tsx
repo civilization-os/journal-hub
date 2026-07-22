@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import { statsApi, settingsApi } from '@/lib/api'
 import { PageLayout } from '@/components/layout/PageLayout'
 import { MarkdownViewer } from '@/components/journal/MarkdownViewer'
-import { useToast } from '@/components/ui/toaster'
 import { Stats } from '@/types'
 import { cn, formatRelative, todayStr, stripHtml } from '@/lib/utils'
 import { BookOpen, CheckSquare, Calendar, Plus, ArrowRight, TrendingUp, Clock, Sparkles } from 'lucide-react'
@@ -15,9 +14,11 @@ export function DashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [suggestion, setSuggestion] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-  const { toast } = useToast()
+  const [loadFailed, setLoadFailed] = useState(false)
 
   const loadStats = useCallback(() => {
+    setLoading(true)
+    setLoadFailed(false)
     Promise.all([
       statsApi.overview(),
       settingsApi.get('daily_suggestion')
@@ -27,9 +28,9 @@ export function DashboardPage() {
       setLoading(false)
     }).catch(() => {
       setLoading(false)
-      toast({ title: '加载数据失败', variant: 'error' })
+      setLoadFailed(true)
     })
-  }, [toast])
+  }, [])
 
   useEffect(() => {
     loadStats()
@@ -178,6 +179,20 @@ export function DashboardPage() {
                   </div>
                 ))}
               </div>
+            )}
+
+            {loadFailed && (
+              <Card>
+                <CardContent className="p-5 flex flex-col gap-3">
+                  <div className="text-base font-bold">本地数据服务暂未就绪</div>
+                  <p className="text-sm text-muted-foreground">
+                    Journal Hub 正在启动内部数据服务。若持续停留在此状态，请退出托盘中的 Journal Hub 后重新打开。
+                  </p>
+                  <Button onClick={loadStats} variant="outline" className="w-fit">
+                    重新加载
+                  </Button>
+                </CardContent>
+              </Card>
             )}
 
             {/* Recent Journals */}

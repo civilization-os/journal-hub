@@ -1,7 +1,6 @@
-import { app, BrowserWindow, Tray, Menu, ipcMain, dialog } from 'electron'
+import { app, BrowserWindow, Tray, Menu, ipcMain, dialog, utilityProcess } from 'electron'
 import path from 'path'
 import fs from 'fs'
-import { fork, ChildProcess } from 'child_process'
 import fse from 'fs-extra'
 
 const isDev = !app.isPackaged;
@@ -31,7 +30,7 @@ if (!gotTheLock) {
 } else {
   let mainWindow: BrowserWindow | null = null
   let tray: Tray | null = null
-  let mcpProcess: ChildProcess | null = null
+  let mcpProcess: any = null
   let isQuitting = false
 
   const getIconPath = () => {
@@ -135,19 +134,25 @@ if (!gotTheLock) {
 
     console.log('Starting MCP Service...')
     
-    // Locate the MCP server script
+    // Locate the desktop-hosted MCP SSE server script.
     let mcpScriptPath = ''
     if (isDev) {
-      mcpScriptPath = path.join(__dirname, '../../mcp-server/index.js')
+      mcpScriptPath = path.join(__dirname, '../../mcp-server/http-server.js')
     } else {
       // Packaged app path
-      mcpScriptPath = path.join(process.resourcesPath, 'mcp-server/index.js')
+      mcpScriptPath = path.join(process.resourcesPath, 'mcp-server/http-server.js')
     }
 
     if (fs.existsSync(mcpScriptPath)) {
-      mcpProcess = fork(mcpScriptPath, [], {
+      mcpProcess = utilityProcess.fork(mcpScriptPath, [], {
         cwd: path.dirname(mcpScriptPath),
-        env: { ...process.env, APP_DATA_DIR: currentDataPath }
+        env: {
+          ...process.env,
+          APP_DATA_DIR: currentDataPath,
+          JOURNAL_HUB_API_BASE: 'http://127.0.0.1:3001/api',
+          MCP_HOST: '127.0.0.1',
+          MCP_PORT: '3002'
+        }
       })
 
       mcpProcess.on('exit', (code) => {
@@ -167,7 +172,7 @@ if (!gotTheLock) {
     }
   }
 
-  let backendProcess: ChildProcess | null = null
+  let backendProcess: any = null
 
   const startBackendService = () => {
     if (backendProcess) return;
@@ -181,9 +186,17 @@ if (!gotTheLock) {
     }
 
     if (fs.existsSync(backendScriptPath)) {
-      backendProcess = fork(backendScriptPath, [], {
+      const betterSqlite3Path = isDev
+        ? ''
+        : path.join(process.resourcesPath, 'app.asar.unpacked/node_modules/better-sqlite3')
+
+      backendProcess = utilityProcess.fork(backendScriptPath, [], {
         cwd: path.dirname(backendScriptPath),
-        env: { ...process.env, APP_DATA_DIR: app.getPath('userData') }
+        env: {
+          ...process.env,
+          APP_DATA_DIR: app.getPath('userData'),
+          BETTER_SQLITE3_PATH: betterSqlite3Path
+        }
       })
 
       backendProcess.on('exit', (code) => {
@@ -296,6 +309,35 @@ if (!gotTheLock) {
       }
     }
     return {}
+  })
+
+  ipcMain.handle('get-mcp-config', () => {
+    const mcpShimPath = isDev
+      ? path.join(__dirname, '../../mcp-server/index.js')
+      : path.join(process.resourcesPath, 'mcp-server/index.js')
+
+    const sseConfig = {
+      mcpServers: {
+        'journal-hub': {
+          url: 'http://127.0.0.1:3002/sse'
+        }
+      }
+    }
+
+    const stdioConfig = {
+      mcpServers: {
+        'journal-hub': {
+          command: 'node',
+          args: [mcpShimPath]
+        }
+      }
+    }
+
+    return {
+      sse: JSON.stringify(sseConfig, null, 2),
+      stdio: JSON.stringify(stdioConfig, null, 2),
+      stdioPath: mcpShimPath
+    }
   })
 
   ipcMain.on('window-minimize', () => {

@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   migrateData: (targetPath: string) => ipcRenderer.invoke('migrate-data', targetPath),
   toggleMcp: (enabled: boolean) => ipcRenderer.invoke('toggle-mcp', enabled),
   getSettings: () => ipcRenderer.invoke('get-settings'),
+  getMcpConfig: () => ipcRenderer.invoke('get-mcp-config'),
   minimize: () => ipcRenderer.send('window-minimize'),
   maximize: () => ipcRenderer.send('window-maximize'),
   close: () => ipcRenderer.send('window-close')

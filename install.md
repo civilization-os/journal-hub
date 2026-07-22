@@ -1,16 +1,8 @@
-# Journal Hub 安装指南
+# Journal Hub 安装与 MCP 接入
 
-本文档用于让人类用户或 AI Agent 快速完成 Journal Hub 的本地安装、构建和 MCP 接入。
+Journal Hub 的主程序是 Desktop。Desktop 可以独立启动和运行，并负责启动本地 Backend API 与 MCP 服务。
 
-## 环境要求
-
-- Node.js 18 或更高版本
-- npm
-- Windows、macOS 或 Linux 终端
-
-## 一键安装步骤
-
-在项目根目录执行以下命令：
+## 安装依赖与构建
 
 ```bash
 cd frontend
@@ -24,62 +16,39 @@ cd ../mcp-server
 npm install
 ```
 
-## 启动 Journal Hub
+## 启动方式
 
-推荐从 MCP 服务入口启动。它会自动启动 Web/API 服务，并同时暴露 MCP stdio 工具。
+推荐从 Desktop 启动 Journal Hub：
 
 ```bash
-cd mcp-server
-node index.js
+cd frontend
+npm run build:electron
 ```
 
-启动后访问：
+安装后的 `Journal Hub.exe` 会作为主控制面启动：
 
-```text
-http://localhost:3001
-```
+- Backend API: `http://127.0.0.1:3001/api`
+- MCP SSE endpoint: `http://127.0.0.1:3002/sse`
+
+如果 Desktop 没有启动，MCP 不会提供业务能力。
+
+## MCP 开关
+
+在 Desktop 的设置中启用或关闭 MCP。
+
+- 开启后，Desktop 会启动 MCP SSE 服务。
+- 关闭后，Desktop 会停止 MCP SSE 服务。
+- stdio 兼容入口即使被外部 MCP 客户端启动，也只会连接 Desktop 管理的 API；如果 Desktop 未运行或 MCP 已关闭，会返回明确错误。
 
 ## MCP 客户端配置
 
-将你的 MCP 客户端配置指向 `mcp-server/index.js`。请把路径替换成你的本地绝对路径。
-
-```json
-{
-  "mcpServers": {
-    "journal-hub": {
-      "command": "node",
-      "args": [
-        "D:\\project\\journal-hub\\mcp-server\\index.js"
-      ]
-    }
-  }
-}
-```
-
-如果项目路径不是 `D:\project\journal-hub`，请修改为实际路径，例如：
-
-```json
-{
-  "mcpServers": {
-    "journal-hub": {
-      "command": "node",
-      "args": [
-        "绝对路径/到/你的/journal-hub/mcp-server/index.js"
-      ]
-    }
-  }
-}
-```
-
-## Codex 项目级配置
-
-本项目已提供项目级 MCP 配置文件：
+优先使用支持 SSE/HTTP 的 MCP 客户端，连接：
 
 ```text
-.mcp.json
+http://127.0.0.1:3002/sse
 ```
 
-内容示例：
+如果客户端只支持 stdio，可以使用兼容 shim：
 
 ```json
 {
@@ -94,41 +63,24 @@ http://localhost:3001
 }
 ```
 
-如果你移动了项目目录，需要同步更新 `.mcp.json` 中的绝对路径。
+stdio shim 不会启动 Desktop 或 Backend。它只负责把 MCP 工具调用转发到 Desktop 管理的本地 API。
 
-## 验证 MCP 是否可用
+## 安装时关闭已运行程序
 
-重启 MCP 客户端后，确认能看到 `journal-hub` 工具。可用工具包括：
-
-- `journal_create`
-- `journal_list`
-- `journal_search`
-- `todo_create`
-- `todo_update`
-- `todo_complete`
-- `calendar_events_list`
-- `calendar_get_day`
-- `stats_overview`
-- `open_web_ui`
+Windows 安装包会在安装开始时检查 `Journal Hub.exe` 是否正在运行。如果检测到已运行实例，会提示用户确认关闭程序后继续安装，或取消安装。
 
 ## 常见问题
 
-### 端口 3001 被占用
+### Desktop 没启动时 MCP 会怎样？
 
-这是预期行为。MCP 服务内置多启动防护：
+SSE 模式下 endpoint 不存在，客户端无法连接。
 
-- 如果 3001 空闲，会启动完整 Web/API 服务。
-- 如果 3001 已被占用，会只启动 MCP stdio 服务，避免端口冲突。
+stdio shim 模式下，MCP 进程可以被客户端拉起，但工具调用会返回：
 
-### 修改 `.mcp.json` 后没有生效
-
-多数 MCP 客户端不会热加载配置。修改后请重启客户端，或重新打开项目。
-
-### 中文显示乱码
-
-请确保用 UTF-8 读取 Markdown 文件。在 PowerShell 中可使用：
-
-```powershell
-Get-Content install.md -Encoding utf8
-Get-Content README.md -Encoding utf8
+```text
+Journal Hub Desktop is not running or MCP is disabled. Please start Journal Hub Desktop and enable MCP in Settings, then retry this tool.
 ```
+
+### 端口 3001 或 3002 被占用怎么办？
+
+3001 是 Desktop 管理的 Backend API 端口，3002 是 Desktop 管理的 MCP SSE 端口。正常使用时不应该手动启动这些服务。若端口被其他进程占用，请关闭占用进程后重新启动 Desktop。
