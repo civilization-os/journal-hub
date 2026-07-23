@@ -101,7 +101,7 @@ router.get('/:id', (req, res) => {
 // POST /api/todos - 创建待办
 router.post('/', (req, res) => {
   try {
-    const { title, description = '', priority = 'medium', status, completed, progress, due_date, tags = [], sort_order = 0 } = req.body;
+    const { title, description = '', priority = 'medium', status, completed, progress, start_date, due_date, tags = [], sort_order = 0 } = req.body;
     if (!title) return res.status(400).json({ error: 'Title is required' });
 
     const id = uuidv4();
@@ -115,8 +115,8 @@ router.post('/', (req, res) => {
     });
 
     db.prepare(
-      'INSERT INTO todos (id, title, description, completed, status, priority, progress, due_date, tags, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
-    ).run(id, title, description, state.completed, state.status, priority, state.progress, due_date, JSON.stringify(tags), finalSortOrder, now, now);
+      'INSERT INTO todos (id, title, description, completed, status, priority, progress, start_date, due_date, tags, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    ).run(id, title, description, state.completed, state.status, priority, state.progress, start_date, due_date, JSON.stringify(tags), finalSortOrder, now, now);
 
     const todo = db.prepare('SELECT * FROM todos WHERE id = ?').get(id);
     res.status(201).json(serializeTodo(todo));
@@ -131,7 +131,7 @@ router.put('/:id', (req, res) => {
     const existing = db.prepare('SELECT * FROM todos WHERE id = ?').get(req.params.id);
     if (!existing) return res.status(404).json({ error: 'Todo not found' });
 
-    const { title, description, completed, status, priority, progress, due_date, tags, sort_order } = req.body;
+    const { title, description, completed, status, priority, progress, start_date, due_date, tags, sort_order } = req.body;
     const now = new Date().toISOString();
 
     const state = deriveState({
@@ -141,7 +141,7 @@ router.put('/:id', (req, res) => {
     });
 
     db.prepare(
-      'UPDATE todos SET title=?, description=?, completed=?, status=?, priority=?, progress=?, due_date=?, tags=?, sort_order=?, updated_at=? WHERE id=?'
+      'UPDATE todos SET title=?, description=?, completed=?, status=?, priority=?, progress=?, start_date=?, due_date=?, tags=?, sort_order=?, updated_at=? WHERE id=?'
     ).run(
       title !== undefined ? title : existing.title,
       description !== undefined ? description : existing.description,
@@ -149,6 +149,7 @@ router.put('/:id', (req, res) => {
       state.status,
       priority !== undefined ? priority : existing.priority,
       state.progress,
+      start_date !== undefined ? start_date : existing.start_date,
       due_date !== undefined ? due_date : existing.due_date,
       tags !== undefined ? JSON.stringify(tags) : existing.tags,
       sort_order !== undefined ? sort_order : existing.sort_order,

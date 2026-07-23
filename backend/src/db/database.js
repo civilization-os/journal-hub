@@ -41,6 +41,7 @@ function initSchema() {
       status TEXT NOT NULL DEFAULT 'todo',
       priority TEXT NOT NULL DEFAULT 'medium',
       progress INTEGER NOT NULL DEFAULT 0,
+      start_date TEXT DEFAULT NULL,
       due_date TEXT DEFAULT NULL,
       tags TEXT NOT NULL DEFAULT '[]',
       sort_order INTEGER NOT NULL DEFAULT 0,
@@ -60,6 +61,9 @@ function initSchema() {
     if (!tableInfo.find(col => col.name === 'progress')) {
       db.exec("ALTER TABLE todos ADD COLUMN progress INTEGER NOT NULL DEFAULT 0");
       db.exec("UPDATE todos SET progress = 100 WHERE completed = 1");
+    }
+    if (!tableInfo.find(col => col.name === 'start_date')) {
+      db.exec("ALTER TABLE todos ADD COLUMN start_date TEXT DEFAULT NULL");
     }
   } catch (err) {
     console.error("Migration error:", err);

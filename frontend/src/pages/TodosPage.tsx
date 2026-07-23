@@ -28,6 +28,7 @@ interface TodoFormData {
   description: string
   priority: Priority
   progress: number
+  start_date: string
   due_date: string
   tags: string[]
 }
@@ -37,6 +38,7 @@ const emptyForm: TodoFormData = {
   description: '',
   priority: 'medium',
   progress: 0,
+  start_date: '',
   due_date: '',
   tags: [],
 }
@@ -209,12 +211,14 @@ export function TodosPage() {
       description: t.description || '',
       priority: t.priority,
       progress: t.progress ?? 0,
+      start_date: t.start_date || '',
       due_date: t.due_date || '',
       tags: t.tags || [],
     })
     setTagInput('')
     setDialogOpen(true)
   }
+
 
   const handleSave = async () => {
     if (!form.title.trim()) {
@@ -223,7 +227,7 @@ export function TodosPage() {
     }
     setSaving(true)
     try {
-      const payload = { ...form, progress: Math.min(100, Math.max(0, Math.round(form.progress))), due_date: form.due_date || null }
+      const payload = { ...form, progress: Math.min(100, Math.max(0, Math.round(form.progress))), start_date: form.start_date || null, due_date: form.due_date || null }
       if (editingId) {
         await todoApi.update(editingId, payload)
         toast({ title: '待办任务已更新', variant: 'success' })
@@ -447,13 +451,23 @@ export function TodosPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 block">截止日期</label>
-                <Input
-                  type="date"
-                  value={form.due_date}
-                  onChange={e => setForm(f => ({ ...f, due_date: e.target.value }))}
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 block">开始日期</label>
+                  <Input
+                    type="date"
+                    value={form.start_date}
+                    onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 block">截止日期</label>
+                  <Input
+                    type="date"
+                    value={form.due_date}
+                    onChange={e => setForm(f => ({ ...f, due_date: e.target.value }))}
+                  />
+                </div>
               </div>
             </div>
 
