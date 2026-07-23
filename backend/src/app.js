@@ -3,14 +3,31 @@ const cors = require('cors');
 const path = require('path');
 
 const app = express();
+const API_TOKEN = process.env.JOURNAL_HUB_API_TOKEN || '';
 
 // Middleware
 app.use(cors({
-  origin: (origin, callback) => callback(null, true),
+  origin: (origin, callback) => {
+    if (!origin || origin === 'file://' || origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1')) {
+      return callback(null, true);
+    }
+    return callback(new Error('Origin not allowed'));
+  },
   credentials: true,
 }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+
+function hasValidApiToken(req) {
+  if (!API_TOKEN) return true;
+  return req.get('x-journal-hub-token') === API_TOKEN || req.query.token === API_TOKEN;
+}
+
+app.use('/api', (req, res, next) => {
+  if (req.path === '/health') return next();
+  if (hasValidApiToken(req)) return next();
+  res.status(401).json({ error: 'Unauthorized' });
+});
 
 // SSE Clients Registry
 const sseClients = new Set();

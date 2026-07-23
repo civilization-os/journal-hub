@@ -11,11 +11,18 @@ interface SettingsModalProps {
   onOpenChange: (open: boolean) => void
 }
 
+type McpConfig = {
+  http: string
+  sse: string
+  stdio: string
+  stdioPath: string
+}
+
 export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   const [mcpEnabled, setMcpEnabled] = useState(false)
   const [dataPath, setDataPath] = useState<string>('')
-  const [mcpConfig, setMcpConfig] = useState<{ sse: string; stdio: string; stdioPath: string } | null>(null)
-  const [copied, setCopied] = useState<'sse' | 'stdio' | null>(null)
+  const [mcpConfig, setMcpConfig] = useState<McpConfig | null>(null)
+  const [copied, setCopied] = useState<'http' | 'sse' | 'stdio' | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isMigrating, setIsMigrating] = useState(false)
 
@@ -34,23 +41,22 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
         if (config) setMcpConfig(config)
       })
       .catch(console.error)
-      .finally(() => {
-        setIsLoading(false)
-      })
+      .finally(() => setIsLoading(false))
   }, [open])
 
   const handleMcpToggle = async (checked: boolean) => {
     setMcpEnabled(checked)
     try {
-      await window.electronAPI?.toggleMcp(checked)
+      await window.electronAPI?.toggleMcp?.(checked)
+      window.dispatchEvent(new CustomEvent('mcp_status_changed'))
     } catch (e) {
       setMcpEnabled(!checked)
       console.error('Failed to toggle MCP:', e)
     }
   }
 
-  const copyConfig = async (type: 'sse' | 'stdio') => {
-    const value = type === 'sse' ? mcpConfig?.sse : mcpConfig?.stdio
+  const copyConfig = async (type: 'http' | 'sse' | 'stdio') => {
+    const value = type === 'http' ? mcpConfig?.http : type === 'sse' ? mcpConfig?.sse : mcpConfig?.stdio
     if (!value) return
 
     await navigator.clipboard.writeText(value)
@@ -65,9 +71,9 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
 
     setIsMigrating(true)
     try {
-      const result = await window.electronAPI.migrateData(targetPath)
-      if (!result.success) {
-        console.error('Data migration failed:', result.message)
+      const result = await window.electronAPI.migrateData?.(targetPath)
+      if (!result?.success) {
+        console.error('Data migration failed:', result?.message)
         setIsMigrating(false)
       }
     } catch (err) {
@@ -86,7 +92,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
         </div>
         <div className="p-6 bg-white space-y-6 overflow-y-auto max-h-[calc(86vh-82px)]">
           <div>
-            <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3">MCP 服务器配置</h3>
+            <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3">MCP 服务配置</h3>
             <div className="space-y-3">
               <div className="flex flex-row items-center justify-between rounded-lg border border-zinc-100 bg-zinc-50 p-4 shadow-sm">
                 <div className="space-y-1">
@@ -114,8 +120,16 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
               </div>
 
               <ConfigBlock
-                title="推荐配置：SSE / HTTP"
-                description="适用于支持远程 MCP endpoint 的客户端。Desktop 未启动或 MCP 关闭时，此 endpoint 不可用。"
+                title="推荐配置：Streamable HTTP"
+                description="适用于支持 URL endpoint 的 MCP 客户端。Desktop 未启动或 MCP 关闭时，该 endpoint 不可用。"
+                value={mcpConfig?.http || ''}
+                copied={copied === 'http'}
+                onCopy={() => copyConfig('http')}
+              />
+
+              <ConfigBlock
+                title="兼容配置：legacy SSE"
+                description="保留给仍使用 SSE 传输的客户端。新客户端优先使用 Streamable HTTP。"
                 value={mcpConfig?.sse || ''}
                 copied={copied === 'sse'}
                 onCopy={() => copyConfig('sse')}
@@ -208,7 +222,7 @@ function ConfigBlock({
           onClick={onCopy}
           disabled={!value}
           className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-700 shadow-sm transition-colors hover:bg-zinc-100 disabled:opacity-50"
-          aria-label={`复制${title}`}
+          aria-label={`复制 ${title}`}
         >
           {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
         </button>

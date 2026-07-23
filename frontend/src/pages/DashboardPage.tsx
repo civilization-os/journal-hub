@@ -248,7 +248,7 @@ export function DashboardPage() {
                         {j.title || '无标题日志'}
                       </span>
                       <span className="text-xs text-muted-foreground font-medium shrink-0 ml-4 transition-colors">
-                        {j.created_at ? formatRelative(j.created_at) : ''}
+                        {j.date ? j.date : (j.created_at ? formatRelative(j.created_at) : '')}
                       </span>
                     </div>
                     {j.content && (

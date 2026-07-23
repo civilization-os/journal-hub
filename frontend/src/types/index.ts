@@ -65,7 +65,9 @@ declare global {
       migrateData: (targetPath: string) => Promise<{ success: boolean; message?: string }>
       toggleMcp: (enabled: boolean) => Promise<boolean>
       getSettings: () => Promise<{ mcpEnabled?: boolean }>
-      getMcpConfig: () => Promise<{ sse: string; stdio: string; stdioPath: string }>
+      getMcpConfig: () => Promise<{ http: string; sse: string; stdio: string; stdioPath: string }>
+      getApiAuth: () => Promise<{ baseURL: string; token: string }>
+      getServiceStatus: () => Promise<unknown>
       minimize: () => void
       maximize: () => void
       close: () => void

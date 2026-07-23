@@ -9,9 +9,43 @@ const os = require('os');
 
 const PORT = process.env.PORT || 3001;
 const API_BASE = process.env.JOURNAL_HUB_API_BASE || `http://127.0.0.1:${PORT}/api`;
+const API_TOKEN = process.env.JOURNAL_HUB_API_TOKEN || '';
 
-const api = axios.create({ baseURL: API_BASE, timeout: 10000 });
+const api = axios.create({
+  baseURL: API_BASE,
+  timeout: 10000,
+  headers: API_TOKEN ? { 'x-journal-hub-token': API_TOKEN } : {},
+});
 const DESKTOP_REQUIRED_MESSAGE = 'Journal Hub Desktop is not running or MCP is disabled. Please start Journal Hub Desktop and enable MCP in Settings, then retry this tool.';
+const DAILY_SUGGESTION_TEMPLATE = `## 今日建议
+
+**一句话总览：** 基于今天的待办和日志，用一句自然的话概括当前状态。
+
+**建议行动：**
+1. 写一个具体、可执行的小动作。
+2. 写一个和待办/日程相关的推进动作。
+3. 写一个和记录、复盘或情绪整理相关的动作。
+
+**温和提醒：** 用一句不说教的话收尾。`;
+
+const DAILY_SUGGESTION_INSTRUCTIONS = `You are generating the Dashboard "AI 今日建议" for Journal Hub.
+
+Data source rules:
+1. Call todo_list to read today's relevant pending todos.
+2. Call journal_list to read today's journals.
+3. Optionally call calendar_get_day for today's date if schedule context would help.
+
+Output rules:
+1. The final suggestion MUST be written in Chinese.
+2. The final suggestion MUST follow this exact Markdown structure:
+
+${DAILY_SUGGESTION_TEMPLATE}
+
+3. Keep it concise: 80-160 Chinese characters total after filling the template.
+4. Do not mention tool names, JSON, MCP, database, or implementation details.
+5. If there is no data, acknowledge the blank slate and suggest one tiny starting action.
+6. After composing the suggestion, call set_daily_suggestion with the complete Markdown string as the "suggestion" argument.
+7. After saving, tell the user briefly that the Dashboard suggestion has been updated.`;
 
 // ==================== Tool Definitions ====================
 const TOOLS = [
@@ -410,12 +444,7 @@ async function handleTool(name, args) {
       return JSON.stringify({ message: `Opened Web UI at ${url}` }, null, 2);
     }
     case 'generate_daily_suggestion_workflow': {
-      return `INSTRUCTION TO AI: Please execute the following sequence of steps:
-1. Call the 'todo_list' tool to fetch today's pending todos.
-2. Call the 'journal_list' tool to fetch today's journals.
-3. Analyze the data and generate a 50-word encouraging daily suggestion.
-4. Call the 'set_daily_suggestion' tool with your generated suggestion.
-5. Inform the user that the dashboard has been updated.`;
+      return DAILY_SUGGESTION_INSTRUCTIONS;
     }
     case 'generate_weekly_review_workflow': {
       return `INSTRUCTION TO AI: Please execute the following sequence of steps:
@@ -444,7 +473,7 @@ async function startMcpServer() {
 
 function createMcpServer() {
   const server = new Server(
-    { name: 'journal-hub-mcp', version: '1.0.1' },
+    { name: 'journal-hub-mcp', version: '1.0.4' },
     { capabilities: { tools: {}, prompts: {} } }
   );
 
@@ -454,7 +483,7 @@ function createMcpServer() {
     prompts: [
       {
         name: 'daily_suggestion_prompt',
-        description: 'Generate a daily suggestion based on today\'s todos and journals.',
+        description: 'Generate a templated Chinese Dashboard suggestion based on today\'s todos and journals.',
       },
     ],
   }));
@@ -469,6 +498,24 @@ function createMcpServer() {
             content: {
               type: 'text',
               text: '请使用 todo_list 工具和 journal_list 工具读取我今天的待办事项和日记。然后，为我生成一段 50 字左右的今日鼓励与建议。生成完毕后，请必须调用 set_daily_suggestion 工具将这段建议保存，方便我在主页上查看。',
+            },
+          },
+        ],
+      };
+    }
+    throw new Error(`Unknown prompt: ${request.params.name}`);
+  });
+
+  server.setRequestHandler(GetPromptRequestSchema, async (request) => {
+    if (request.params.name === 'daily_suggestion_prompt') {
+      return {
+        description: 'Prompt to generate a templated daily suggestion',
+        messages: [
+          {
+            role: 'user',
+            content: {
+              type: 'text',
+              text: DAILY_SUGGESTION_INSTRUCTIONS,
             },
           },
         ],

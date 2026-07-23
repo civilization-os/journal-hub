@@ -6,7 +6,6 @@ const path = require('path');
 
 // GET /api/settings/mcp-status
 router.get('/mcp-status', (req, res) => {
-  console.log('[DEBUG] mcp-status route HIT!');
   try {
     const settingsPath = path.join(process.env.APP_DATA_DIR || path.join(__dirname, '../../data'), 'settings.json');
     let enabled = false;

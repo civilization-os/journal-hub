@@ -7,6 +7,29 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
+let apiAuthPromise: Promise<{ baseURL: string; token: string } | null> | null = null
+
+function getApiAuth() {
+  if (!import.meta.env.PROD || !window.electronAPI?.getApiAuth) {
+    return Promise.resolve(null)
+  }
+  if (!apiAuthPromise) {
+    apiAuthPromise = window.electronAPI.getApiAuth()
+  }
+  return apiAuthPromise
+}
+
+api.interceptors.request.use(async (config) => {
+  const auth = await getApiAuth()
+  if (auth?.baseURL) {
+    config.baseURL = auth.baseURL
+  }
+  if (auth?.token) {
+    config.headers.set('x-journal-hub-token', auth.token)
+  }
+  return config
+})
+
 interface ApiResponse<T> {
   data: T
   total?: number

@@ -10,24 +10,37 @@ import { CalendarPage } from '@/pages/CalendarPage'
 
 function App() {
   useEffect(() => {
-    // Connect to SSE stream
-    const sse = new EventSource(import.meta.env.PROD ? 'http://127.0.0.1:3001/api/stream' : '/api/stream')
-    sse.onmessage = (e) => {
-      try {
-        const data = JSON.parse(e.data)
-        if (data.type === 'refresh') {
-          console.log('[SSE] Received refresh signal for:', data.path)
-          window.dispatchEvent(new CustomEvent('app_data_changed', { detail: data }))
+    let sse: EventSource | null = null
+    let disposed = false
+
+    async function connectStream() {
+      const streamUrl = import.meta.env.PROD && window.electronAPI?.getApiAuth
+        ? await window.electronAPI.getApiAuth().then(auth => `${auth.baseURL}/stream?token=${encodeURIComponent(auth.token)}`)
+        : '/api/stream'
+
+      if (disposed) return
+      sse = new EventSource(streamUrl)
+      sse.onmessage = (e) => {
+        try {
+          const data = JSON.parse(e.data)
+          if (data.type === 'refresh') {
+            console.log('[SSE] Received refresh signal for:', data.path)
+            window.dispatchEvent(new CustomEvent('app_data_changed', { detail: data }))
+          }
+        } catch (err) {
+          console.error('[SSE] Error parsing message:', err)
         }
-      } catch (err) {
-        console.error('[SSE] Error parsing message:', err)
+      }
+      sse.onerror = () => {
+        console.log('[SSE] Connection error/reconnecting...')
       }
     }
-    sse.onerror = () => {
-      // EventSource automatically reconnects, but we can log errors
-      console.log('[SSE] Connection error/reconnecting...')
+
+    connectStream().catch(console.error)
+    return () => {
+      disposed = true
+      sse?.close()
     }
-    return () => sse.close()
   }, [])
 
   return (
